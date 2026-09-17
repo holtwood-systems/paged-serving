@@ -211,19 +211,25 @@ fn tiny_llm_backend_end_to_end() {
     assert_eq!(m2.failed_requests, 0);
 }
 
-/// B15 回归：decode 越过 tiny-llm 预留 KV 容量（context + decode 预留，默认 512）时，
-/// 请求必须携带清晰的越界错误失败（而非后端 rc 神秘报错或挂起）。
+/// B15 回归：decode 越过 KV 容量上限时，请求必须携带清晰的越界错误失败
+/// （而非后端 rc 神秘报错或挂起）。ABI v3 起两条路径的容量权威不同：
+/// 策略 1（分页）由共享 block pool 承载——块耗尽时调度器报
+/// "Failed to allocate KV block"；策略 2（连续）由每序列 allocate
+/// 预留（context + decode_reserve，默认 512）承载——越界序列被排除出
+/// 本步 FFI，由引擎按逐序列失败归因。
 ///
-/// 触发方式：短 prompt + 大 max_tokens，使总长度越过 submit 的
-/// TotalLengthTooLong 校验上限，但解码步数超过首次分配的 KV 容量。
+/// 触发方式：短 prompt + 大 max_tokens，总长度在 submit 校验上限内，
+/// 但解码步数越过该策略的容量上限。
 #[test]
 fn tiny_llm_backend_decode_overrun_reports_clear_error() {
     let path = model_path();
+    let contiguous = std::env::var("PAGED_SERVING_TINY_LLM_STRATEGY").as_deref() == Ok("2");
 
     let mut config = create_test_config();
-    // max_model_len 需容纳 prompt + 超过 decode 预留默认值(512) 的 max_tokens，
-    // 才能让 decode 实际越过预留容量；KV 池与总额同步放大。
-    config.max_num_blocks = 256;
+    // 策略 1 把共享块池压到 8 块（128 token）：decode 增长必在 ~120 token
+    // 处耗尽。策略 2 给足调度侧块池（512+ token 不挤占），让后端连续 KV 的
+    // decode_reserve=512 默认预留成为真实上限。
+    config.max_num_blocks = if contiguous { 256 } else { 8 };
     config.max_model_len = 1024;
     config.max_total_tokens = 1024;
     config.max_batch_size = 4;
@@ -238,7 +244,7 @@ fn tiny_llm_backend_decode_overrun_reports_clear_error() {
     )
     .unwrap();
 
-    // 短 prompt + 远超预留容量的 max_tokens（1 + 900 <= max_model_len）
+    // 短 prompt + 远超容量上限的 max_tokens（1 + 900 <= max_model_len）
     let params = GenerationParams {
         max_tokens: 900,
         ..GenerationParams::default()
@@ -250,10 +256,17 @@ fn tiny_llm_backend_decode_overrun_reports_clear_error() {
     let c = &completed[0];
     assert!(!c.success, "越界请求应失败");
     let err = c.error.as_ref().expect("失败请求应有错误信息");
-    assert!(
-        err.contains("超出 tiny-llm 预留 KV 容量"),
-        "应返回清晰的越界错误，实际: {err}"
-    );
+    if contiguous {
+        assert!(
+            err.contains("per-sequence failure"),
+            "策略 2 越界应归因逐序列失败，实际: {err}"
+        );
+    } else {
+        assert!(
+            err.contains("KV block"),
+            "策略 1 块池耗尽应返回清晰错误，实际: {err}"
+        );
+    }
 
     // 资源守恒：失败后 KV 也应归还
     let util = engine.memory_utilization();
@@ -309,10 +322,9 @@ fn tiny_llm_backend_withheld_release_control_distinguishes_strategies() {
         if contiguous {
             assert!(!c.success, "连续 KV 缺释放通知时必须识别槽位耗尽");
             let err = c.error.as_ref().expect("耗尽必须报告错误");
-            assert!(
-                err.contains("tinyllm_allocate_sequence"),
-                "非预期错误: {err}"
-            );
+            // ABI v3：分配失败的序列经 viable 排除出 FFI 调用，
+            // 由引擎按 "调度集合 − 输出集合" 归因逐序列失败。
+            assert!(err.contains("per-sequence failure"), "非预期错误: {err}");
         } else {
             assert!(c.success, "分页 KV 没有此连续槽位限制: {:?}", c.error);
         }

@@ -15,7 +15,7 @@
 
 use crate::config::EngineConfig;
 use crate::error::EngineError;
-use crate::gpu_executor::GPUExecutorTrait;
+use crate::gpu_executor::{ExecutorCapabilities, GPUExecutorTrait};
 use crate::types::{BlockIdx, ExecutionBatch, ExecutionOutput, SeqId, TokenId, TokenLogprobs};
 use std::collections::HashMap;
 
@@ -380,6 +380,15 @@ impl CpuReferenceExecutor {
 }
 
 impl GPUExecutorTrait for CpuReferenceExecutor {
+    /// CPU 参考实现产出 logprobs（top_logprobs），批量上限与调度器一致。
+    fn capabilities(&self) -> ExecutorCapabilities {
+        ExecutorCapabilities {
+            logprobs: true,
+            max_batch_seqs: self.config.max_batch_size as usize,
+            ..ExecutorCapabilities::GREEDY_ONLY
+        }
+    }
+
     fn execute(&mut self, batch: &ExecutionBatch) -> Result<ExecutionOutput, EngineError> {
         if batch.is_empty() {
             return Ok(ExecutionOutput::default());

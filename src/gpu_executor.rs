@@ -86,13 +86,27 @@ pub struct ExecutorCapabilities {
     /// 真实 CUDA kernel 超时时 KV 可能已部分写入，重放不安全，必须为 `false`；
     /// 只有能保证重放幂等的后端（如确定性 CPU/Mock）才可设为 `true`。
     pub retry_safe: bool,
+    /// 后端单步可执行的最大序列数。
+    ///
+    /// 引擎用它对账调度器的 `max_batch_size`：调度器不得发出超出后端
+    /// 能力的 batch（否则超出的序列只能逐序列失败而非排队等待）。
+    /// `usize::MAX` 表示后端不限制（如 CPU 参考实现）。
+    pub max_batch_seqs: usize,
+    /// 后端是否产出 logprobs（`ExecutionOutput::logprobs`）。
+    ///
+    /// 为 `false` 时引擎在 submit 阶段拒绝 `params.logprobs.is_some()`
+    /// 的请求——OpenAI 兼容语义要求显式拒绝而非静默缺字段。
+    pub logprobs: bool,
 }
 
 impl ExecutorCapabilities {
-    /// 仅支持 greedy 解码且 **不保证** 超时重放安全（内置后端的保守默认）。
+    /// 仅支持 greedy 解码、不产出 logprobs 且 **不保证** 超时重放安全
+    ///（内置后端的保守默认）。`max_batch_seqs` 不设上限——由实现方覆盖。
     pub const GREEDY_ONLY: Self = Self {
         sampling: false,
         retry_safe: false,
+        max_batch_seqs: usize::MAX,
+        logprobs: false,
     };
 }
 

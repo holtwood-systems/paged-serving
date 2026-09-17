@@ -53,6 +53,12 @@ Status: implemented
 | 策略 1，分页 KV | 四请求成功，4 cancelled、4 completed、0 failed | 同实例复用不能鉴别分页序列登记泄漏 |
 | 策略 2，连续 KV | 四请求失败，4 cancelled、0 completed、4 failed；错误含 `tinyllm_allocate_sequence` | 满容量复用能检出本对照的连续槽位耗尽 |
 
+> **2026-11-09 更新**：ABI v3 后该行断言改验
+> `per-sequence failure` 归因文案（分配失败序列经 viable 排除、由引擎
+> 按缺失输出归因），见
+> [2026-11-09-abi-v3-per-seq-failure-capabilities](../feature/2026-11-09-abi-v3-per-seq-failure-capabilities.md)。
+> 表中 `tinyllm_allocate_sequence` 为当次历史证据原文。
+
 对照 wrapper 的 execute 与 capabilities 委托真实 TinyLlmExecutor；只有
 sequences_finished 使用 trait 默认空实现。它没有 mock 计算或预造失败消息，
 同一正向配置能再服务，反向配置实际在新序列分配处失败。对照的预期错误不是
