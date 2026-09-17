@@ -201,55 +201,115 @@ impl GPUExecutorTrait for TinyLlmExecutor {
         }
         let n = batch.num_sequences();
 
-        // batch 超限在调度前就明确报错，避免 tinyllm_step 以 rc!=0 返回时
-        // 无法与后端错误/OOM 区分（语义与 CpuReferenceExecutor 一致）。
-        if n > self.max_batch_size as usize {
-            return Err(EngineError::KernelLaunchFailed(format!(
-                "Batch size {} exceeds max {}",
-                n, self.max_batch_size
-            )));
-        }
+        // batch 超上限不再整批失败：超出 max_batch_size 的序列被排除出本步，
+        // 由引擎按缺失判定逐序列失败（ABI v3 隔离语义）。
+        let batch_cap = self.max_batch_size as usize;
 
-        // 首次出现的序列分配 KV（用 context_len 预估）
-        let mut seq_ids: Vec<c_int> = Vec::with_capacity(n);
+        // 首次出现的序列分配 KV（用 context_len 预估）。
+        // ABI v3 逐序列语义：分配失败/容量越界的序列不进 FFI 调用——引擎按
+        // "调度集合 − 输出集合"判定逐序列失败，不再株连整个 batch。
+        let mut viable: Vec<bool> = vec![true; n];
+        if n > batch_cap {
+            log::warn!(
+                "batch size {n} exceeds backend cap {batch_cap}; \
+                 sequences beyond the cap fail this step"
+            );
+            for v in viable.iter_mut().skip(batch_cap) {
+                *v = false;
+            }
+        }
         for (i, &sid) in batch.seq_ids.iter().enumerate() {
+            if !viable[i] {
+                continue;
+            }
             let sid_i = sid as c_int;
             let ctx = batch.context_lens.get(i).copied().unwrap_or(0) as usize;
-            self.ensure_allocated(sid_i, ctx)?;
-            // 前置检查：decode 将超出 tiny-llm 预留 KV 容量（context + decode_reserve）
-            // 时给出明确错误，而不是等 tinyllm_step 以 rc!=0 返回后无从归因。
-            if let Some(&capacity) = self.allocated.get(&sid_i) {
-                if ctx as i32 + 1 > capacity {
-                    let reserve = self.decode_reserve;
-                    return Err(EngineError::BackendError(format!(
-                        "sequence {sid} 生成将超出 tiny-llm 预留 KV 容量 \
-                         (context+{reserve}，容量 {capacity})，请调小 max_tokens \
-                         或调大 PAGED_SERVING_TINY_LLM_DECODE_RESERVE"
-                    )));
+            if let Err(e) = self.ensure_allocated(sid_i, ctx) {
+                log::warn!("sequence {sid} allocation failed, excluded from step: {e}");
+                viable[i] = false;
+                continue;
+            }
+            // decode_reserve 上限只在策略 2（连续 KV）下真实存在——后端
+            // allocate_sequence 的 num_tokens 仅在该策略下参与容量预留。
+            // 策略 1（分页 KV）的容量权威是共享 block pool + max_seq_len，
+            // 此处不做幻影前置限制。
+            if !self.paged {
+                if let Some(&capacity) = self.allocated.get(&sid_i) {
+                    if ctx as i32 + 1 > capacity {
+                        log::warn!(
+                            "sequence {sid} decode would exceed contiguous KV capacity \
+                             ({ctx}+1 > {capacity})"
+                        );
+                        viable[i] = false;
+                        continue;
+                    }
                 }
             }
-            seq_ids.push(sid_i);
+            // 策略 1 要求非空块表；空块表序列排除出本步（由引擎判失败）。
+            if self.paged
+                && batch
+                    .block_tables
+                    .get(i)
+                    .map(|b| b.is_empty())
+                    .unwrap_or(true)
+            {
+                log::warn!("sequence {sid} has empty block table, excluded from step");
+                viable[i] = false;
+            }
         }
 
-        let input_tokens: Vec<c_int> = batch.input_tokens.iter().map(|&t| t as c_int).collect();
-        let positions: Vec<c_int> = batch.positions.iter().map(|&p| p as c_int).collect();
-        let seq_lens: Vec<c_int> = batch.seq_lens.iter().map(|&l| l as c_int).collect();
-        let is_prefill: Vec<u8> = batch.is_prefill.iter().map(|&b| b as u8).collect();
-        let mut next_tokens = vec![0i32; n];
+        // 调用方契约校验：扁平化 token 数组必须与 seq_lens 对齐，否则
+        // 属于 batch 构造违约（调用级错误，整批失败——切片无法安全错位重建）。
+        let total_len: usize = batch.seq_lens.iter().map(|&l| l as usize).sum();
+        if total_len > batch.input_tokens.len()
+            || total_len > batch.positions.len()
+            || batch.seq_lens.len() < n
+            || batch.is_prefill.len() < n
+            || (self.paged && batch.block_tables.len() < n)
+        {
+            return Err(EngineError::BackendError(
+                "malformed ExecutionBatch: arrays misaligned with seq_lens".into(),
+            ));
+        }
 
-        // 策略 1：把每序列的块表扁平化，num_blocks 给出每序列块数。
-        // 策略 2 fallback：两者都传 null。
+        // 只为可执行序列构建扁平化输入数组（token 切片按 seq_lens 对齐）。
+        let m = viable.iter().filter(|&&v| v).count();
+        if m == 0 {
+            return Ok(ExecutionOutput::default());
+        }
+        let mut seq_ids: Vec<c_int> = Vec::with_capacity(m);
+        let mut input_tokens: Vec<c_int> = Vec::new();
+        let mut positions: Vec<c_int> = Vec::new();
+        let mut seq_lens: Vec<c_int> = Vec::with_capacity(m);
+        let mut is_prefill: Vec<u8> = Vec::with_capacity(m);
         let mut block_tables_flat: Vec<c_int> = Vec::new();
-        let mut num_blocks: Vec<c_int> = Vec::with_capacity(n);
-        if self.paged {
-            for bt in &batch.block_tables {
-                if bt.is_empty() {
-                    return Err(EngineError::BackendError("empty block table".into()));
+        let mut num_blocks: Vec<c_int> = Vec::with_capacity(m);
+        let mut offset = 0usize;
+        for (i, &v) in viable.iter().enumerate() {
+            let len = batch.seq_lens.get(i).copied().unwrap_or(0) as usize;
+            if v {
+                seq_ids.push(batch.seq_ids[i] as c_int);
+                input_tokens.extend(
+                    batch.input_tokens[offset..offset + len]
+                        .iter()
+                        .map(|&t| t as c_int),
+                );
+                positions.extend(
+                    batch.positions[offset..offset + len]
+                        .iter()
+                        .map(|&p| p as c_int),
+                );
+                seq_lens.push(len as c_int);
+                is_prefill.push(batch.is_prefill[i] as u8);
+                if self.paged {
+                    let bt = &batch.block_tables[i];
+                    num_blocks.push(bt.len() as c_int);
+                    block_tables_flat.extend(bt.iter().map(|&b| b as c_int));
                 }
-                num_blocks.push(bt.len() as c_int);
-                block_tables_flat.extend(bt.iter().map(|&b| b as c_int));
             }
+            offset += len;
         }
+
         let bt_ptr = if self.paged {
             block_tables_flat.as_ptr()
         } else {
@@ -261,6 +321,8 @@ impl GPUExecutorTrait for TinyLlmExecutor {
             std::ptr::null()
         };
 
+        let mut next_tokens = vec![0i32; m];
+        let mut seq_status = vec![-1i32; m]; // ABI v3 逐序列状态出参
         let rc = unsafe {
             symbols::tinyllm_step(
                 self.handle,
@@ -271,27 +333,49 @@ impl GPUExecutorTrait for TinyLlmExecutor {
                 bt_ptr,
                 nb_ptr,
                 is_prefill.as_ptr(),
-                n as c_int,
+                m as c_int,
                 next_tokens.as_mut_ptr(),
                 std::ptr::null_mut(),
                 0,
+                seq_status.as_mut_ptr(),
             )
         };
+        // rc != 0 仅表示调用级违约（无法归因到单序列），整批失败仍成立。
         if rc != 0 {
             return Err(EngineError::BackendError(format!(
                 "tinyllm_step failed rc={rc}"
             )));
         }
 
+        // 逐序列拆分：seq_status==TLLM_SEQ_OK 的序列产出 token；其余由
+        // 引擎按缺失判定失败（输出中不含失败 seq_id）。
+        let mut out_seqs: Vec<SeqId> = Vec::with_capacity(m);
+        let mut out_tokens: Vec<TokenId> = Vec::with_capacity(m);
+        for i in 0..m {
+            if seq_status[i] == 0 {
+                out_seqs.push(seq_ids[i] as SeqId);
+                out_tokens.push(next_tokens[i] as TokenId);
+            } else {
+                log::warn!(
+                    "tinyllm_step: sequence {} failed (seq_status={})",
+                    seq_ids[i],
+                    seq_status[i]
+                );
+            }
+        }
+
         Ok(ExecutionOutput {
-            next_tokens: next_tokens.into_iter().map(|t| t as TokenId).collect(),
-            seq_ids: batch.seq_ids.clone(),
+            next_tokens: out_tokens,
+            seq_ids: out_seqs,
             logprobs: Vec::new(),
         })
     }
 
     fn capabilities(&self) -> ExecutorCapabilities {
-        ExecutorCapabilities::GREEDY_ONLY
+        ExecutorCapabilities {
+            max_batch_seqs: self.max_batch_size.max(1) as usize,
+            ..ExecutorCapabilities::GREEDY_ONLY
+        }
     }
 
     fn sequences_finished(&mut self, seq_ids: &[SeqId]) {

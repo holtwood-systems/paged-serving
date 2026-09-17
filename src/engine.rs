@@ -58,7 +58,7 @@ use crate::types::{
     CompletedRequest, FinishReason, GenerationParams, Request, RequestId, RequestState, SeqId,
     TokenId, TokenLogprobs,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// 本步为单个请求生成的文本片段：`(request_id, 解码文本, 该 token 的 logprob)`。
 pub type StepChunk = (RequestId, String, Option<TokenLogprobs>);
@@ -180,8 +180,10 @@ impl InferenceEngine {
         let vocab_size = tokenizer.vocab_size();
         let eos_token_id = tokenizer.eos_token_id();
 
-        let scheduler = Scheduler::new(config.clone());
         let gpu_executor = create_default_gpu_executor(config.clone(), vocab_size)?;
+        let mut scheduler = Scheduler::new(config.clone());
+        // 调度上限与后端真实批量能力对账：调度器不发出后端跑不动的 batch。
+        scheduler.reconcile_backend_batch_cap(gpu_executor.capabilities().max_batch_seqs);
         let execution_pipeline = BatchExecutionPipeline::new(gpu_executor, &config);
 
         Ok(Self {
@@ -218,7 +220,10 @@ impl InferenceEngine {
         config.validate()?;
 
         let eos_token_id = tokenizer.eos_token_id();
+        let backend_cap = gpu_executor.capabilities().max_batch_seqs;
         let execution_pipeline = BatchExecutionPipeline::new(gpu_executor, &config);
+        let mut scheduler = scheduler;
+        scheduler.reconcile_backend_batch_cap(backend_cap);
 
         Ok(Self {
             config,
@@ -287,6 +292,12 @@ impl InferenceEngine {
                  got temperature = {}, top_p = {}",
                 params.temperature, params.top_p
             )));
+        }
+        // logprobs 同理：后端不支持时显式拒绝，不让响应静默缺字段。
+        if !self.execution_pipeline.capabilities().logprobs && params.logprobs.is_some() {
+            return Err(EngineError::UnsupportedGenerationMode(
+                "backend does not produce logprobs".into(),
+            ));
         }
 
         // 验证输入
@@ -370,6 +381,21 @@ impl InferenceEngine {
             // 通过批次执行流水线完成 GPU 计算（含重试）
             match self.execution_pipeline.execute(&scheduler_output) {
                 Ok(execution_output) => {
+                    // ABI v3：执行器只返回成功序列（seq_status==OK）。调度集合中
+                    // 缺失的 seq_id 视为后端逐序列失败，单独标记失败而不株连。
+                    let produced: HashSet<SeqId> =
+                        execution_output.seq_ids.iter().copied().collect();
+                    let failed: Vec<SeqId> = seq_ids
+                        .iter()
+                        .copied()
+                        .filter(|s| !produced.contains(s))
+                        .collect();
+                    if !failed.is_empty() {
+                        self.scheduler.fail_sequences(
+                            failed,
+                            "backend reported per-sequence failure (seq_status)",
+                        );
+                    }
                     for (seq_id, token) in execution_output
                         .seq_ids
                         .iter()
@@ -878,6 +904,7 @@ mod tests {
             ExecutorCapabilities {
                 sampling: false,
                 retry_safe: true,
+                ..ExecutorCapabilities::GREEDY_ONLY
             }
         }
     }
@@ -894,7 +921,28 @@ mod tests {
             ExecutorCapabilities {
                 sampling: false,
                 retry_safe: true,
+                ..ExecutorCapabilities::GREEDY_ONLY
             }
+        }
+    }
+
+    /// 逐序列失败后端：模拟 ABI v3 seq_status——输出中故意漏掉一个 seq_id，
+    /// 引擎必须把"调度集合 − 输出集合"判为逐序列失败而非株连整批。
+    struct PartialFailExecutor {
+        /// 要从输出中剔除的 seq_id（模拟后端标记该序列失败）。
+        drop_seq: SeqId,
+    }
+
+    impl GPUExecutorTrait for PartialFailExecutor {
+        fn execute(&mut self, batch: &ExecutionBatch) -> Result<ExecutionOutput, EngineError> {
+            let keep: Vec<usize> = (0..batch.seq_ids.len())
+                .filter(|&i| batch.seq_ids[i] != self.drop_seq)
+                .collect();
+            Ok(ExecutionOutput {
+                next_tokens: keep.iter().map(|_| 123u32).collect(),
+                seq_ids: keep.iter().map(|&i| batch.seq_ids[i]).collect(),
+                logprobs: Vec::new(),
+            })
         }
     }
 
@@ -925,6 +973,7 @@ mod tests {
             ExecutorCapabilities {
                 sampling: false,
                 retry_safe: false,
+                ..ExecutorCapabilities::GREEDY_ONLY
             }
         }
     }
@@ -1282,6 +1331,33 @@ mod tests {
         assert_eq!(completed.len(), 1);
         assert!(!completed[0].success);
         assert!(completed[0].error.is_some());
+        assert!(!engine.has_pending_work());
+    }
+
+    #[test]
+    fn test_partial_batch_failure_only_fails_dropped_sequence() {
+        // ABI v3：执行器只返回成功序列。seq 2（第二个请求）被模拟为后端
+        // 逐序列失败，seq 1 必须不受影响地正常完成。
+        let config = create_test_config();
+        let scheduler = Scheduler::new(config.clone());
+        let mut engine = InferenceEngine::with_components(
+            config,
+            Box::new(SimpleTokenizer::new()),
+            scheduler,
+            Box::new(PartialFailExecutor { drop_seq: 2 }),
+        )
+        .unwrap();
+
+        let (req_ok, _) = engine.submit_request("Hello", test_params(2)).unwrap();
+        let (req_bad, _) = engine.submit_request("World", test_params(2)).unwrap();
+
+        let completed = engine.run();
+
+        let ok = completed.iter().find(|r| r.request_id == req_ok).unwrap();
+        let bad = completed.iter().find(|r| r.request_id == req_bad).unwrap();
+        assert!(ok.success, "unaffected sequence must complete normally");
+        assert_eq!(ok.output_tokens.len(), 2);
+        assert!(!bad.success, "dropped sequence must be marked failed");
         assert!(!engine.has_pending_work());
     }
 

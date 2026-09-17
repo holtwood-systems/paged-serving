@@ -436,6 +436,21 @@ impl Scheduler {
         self.kv_cache.get_memory_stats().utilization()
     }
 
+    /// 与后端能力对账：把调度上限收敛到后端真实可执行的批量。
+    /// 调度器据此不再发出后端跑不动的 batch（否则超出部分只能逐序列
+    /// 失败，而非排队等待下一轮）。
+    pub fn reconcile_backend_batch_cap(&mut self, max_batch_seqs: usize) {
+        let cap = max_batch_seqs.min(u32::MAX as usize) as u32;
+        if self.config.max_batch_size > cap {
+            log::warn!(
+                "scheduler max_batch_size={} exceeds backend cap {}; clamping",
+                self.config.max_batch_size,
+                cap
+            );
+            self.config.max_batch_size = cap;
+        }
+    }
+
     pub fn fail_sequences<I>(&mut self, seq_ids: I, reason: &str)
     where
         I: IntoIterator<Item = SeqId>,

@@ -11,9 +11,12 @@
 //! （[`crate::gpu_executor::GPUExecutorTrait`]）。
 //! 因此 tiny-llm 侧必须导出步进式 C ABI，paged-serving 侧经本模块调用。
 //!
-//! # C ABI 契约（ABI v2，tiny-llm 侧已实现）
+//! # C ABI 契约（ABI v3，tiny-llm 侧已实现）
 //!
 //! ```c
+//! #define TLLM_SEQ_OK  0
+//! #define TLLM_SEQ_ERR (-1)
+//!
 //! typedef struct TinyLlmHandle TinyLlmHandle;
 //!
 //! // 加载 GGUF 模型；成功返回句柄，失败返回 NULL 并写入 err_buf。
@@ -22,16 +25,20 @@
 //!                             char* err_buf, int err_buf_len);
 //!
 //! // 单步执行一个 batch（prefill/decode 混合），逐序列输出下一 token 与 logprobs。
-//! // 返回 0 成功，非 0 错误码。
+//! // 返回值只表达调用级违约（空指针、logprobs_k 越界、内部缓冲分配失败）；
+//! // 逐序列结果写入 seq_status[num_sequences]：TLLM_SEQ_OK 时
+//! // next_tokens[i] 有效；TLLM_SEQ_ERR 时该序列失败且不株连其余序列。
 //! // num_blocks[i] = 第 i 个序列的 block_tables 长度；扁平化 block_tables 的
 //! // 总长为 sum(num_blocks)。策略 2 下二者忽略（传 nullptr）。
 //! int tinyllm_step(TinyLlmHandle* handle,
 //!                  const int* seq_ids, const int* input_tokens, const int* positions,
 //!                  const int* seq_lens, const int* block_tables, const int* num_blocks,
 //!                  const unsigned char* is_prefill, int num_sequences,
-//!                  int* next_tokens, float* logprobs, int logprobs_k);
+//!                  int* next_tokens, float* logprobs, int logprobs_k,
+//!                  int* seq_status);
 //!
-//! // KV 生命周期（分页适配后由后端管理；连续 KV 后端可为空实现）。
+//! // KV 生命周期（策略 1 下 num_tokens 仅登记序列、不参与容量预留；
+//! // 策略 2 下为连续 KV 的预留长度）。
 //! int tinyllm_allocate_sequence(TinyLlmHandle* handle, int seq_id, int num_tokens);
 //! int tinyllm_free_sequence(TinyLlmHandle* handle, int seq_id);
 //!
@@ -42,14 +49,14 @@
 //!
 //! - `seq_ids` 显式给出每个序列的 id（由 `tinyllm_allocate_sequence` 分配），
 //!   支持任意 id 的序列混批；
-//! - `input_tokens` / `positions` 是扁平化数组（`seq_lens` 描述每序列切分，
-//!   与 `seq_ids` 对齐），`positions` 不得为空。后端会校验它：prefill 段必须
-//!   是 `0..len-1` 的连续绝对位置，decode 段必须等于后端内部位置计数（即
-//!   `context_len - 1`），decode 的 `seq_len` 必须为 1；不一致返回错误，
-//!   避免 RoPE 位置 / KV 槽位静默错位；
+//! - `input_tokens` 是扁平化数组（`seq_lens` 描述每序列切分，与 `seq_ids`
+//!   对齐）；
+//! - `positions` 是**已声明但未生效**的参数：两种策略下后端均忽略之，
+//!   序列位置由后端 SeqState 内部跟踪（调用方仍需传非空指针）；
 //! - `block_tables` 是扁平化物理块索引；`num_blocks` 给出每序列块数，
 //!   对齐 paged-serving 的 [`crate::types::ExecutionBatch::block_tables`]
 //!   （策略 2 下忽略）；
+//! - `seq_status` 是必填的 `int[num_sequences]` 出参（ABI v3 新增）；
 //! - `logprobs_k == 0` 表示不输出 logprobs；否则 `logprobs` 至少容纳
 //!   `num_sequences × logprobs_k × 2` 个 `f32`，第 0/1 个值分别是以 `f32`
 //!   表示的 `token_id` 与 `logprob`。`logprobs_k` 必须位于 `[0, vocab_size]`，
@@ -58,7 +65,8 @@
 //! # KV 适配策略
 //!
 //! - **策略 1（默认）**：tiny-llm 侧使用分页 KV，按 `block_tables` 间接访问，
-//!   与 paged-serving 的 BlockPool 对齐。
+//!   与 paged-serving 的 BlockPool 对齐；decode 路径默认经 CUDA Graph
+//!   重放（`TLLM_FFI_CUDA_GRAPHS=0` 可关闭）。
 //! - **策略 2（回退）**：tiny-llm 使用连续 KV，忽略 `block_tables` /
 //!   `num_blocks`；设置 `PAGED_SERVING_TINY_LLM_STRATEGY=2` 启用。
 //!
@@ -84,7 +92,7 @@ pub struct TinyLlmConfig {
     pub block_size: i32,
     pub max_batch_size: i32,
     /// 分页 KV 池的物理块总数；0 = 策略 2（连续 KV）。
-    /// 该字段使 `TinyLlmConfig` 变为 9 个 int 的 repr(C) 布局（ABI v2）。
+    /// 该字段使 `TinyLlmConfig` 变为 9 个 int 的 repr(C) 布局。
     pub max_num_blocks: i32,
 }
 
@@ -123,6 +131,7 @@ pub mod symbols {
             next_tokens: *mut c_int,
             logprobs: *mut f32,
             logprobs_k: c_int,
+            seq_status: *mut c_int,
         ) -> c_int;
 
         pub fn tinyllm_allocate_sequence(
@@ -144,7 +153,7 @@ mod tests {
     use std::mem::{align_of, size_of};
 
     /// C ABI 布局守卫：Rust 侧 `repr(C)` 布局不得漂移，否则与 tiny-llm 侧
-    /// 的 `TinyLlmConfig` 错位。字段全为 `i32`，期望 9 字段 × 4 字节（ABI v2）。
+    /// 的 `TinyLlmConfig` 错位。字段全为 `i32`，期望 9 字段 × 4 字节。
     #[test]
     fn tiny_llm_config_layout_is_stable() {
         assert_eq!(size_of::<TinyLlmConfig>(), 9 * 4);

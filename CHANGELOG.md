@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking Changes（ABI v3）
+- 适配 tiny-llm ABI v3：`tinyllm_step` 新增必填 `seq_status` 出参，
+  `src/tiny_llm_ffi.rs` extern 声明同步；`TinyLlmExecutor` 分配并读取
+  逐序列状态，只把 `TLLM_SEQ_OK` 的序列写入 `ExecutionOutput`。
+
 ### Added
 - 2026-10-04 终态复用批次：真实后端越界后继续运行满四请求；prefill/decode 后
   各取消四请求并复用同一实例，检查独立取消分类、一次终态与逻辑 KV 精确归零。
@@ -25,9 +30,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 请求 guard 主动取消、shutdown 广播与每候选有界文本 mailbox（默认 64、可配）；
   终态经独立 oneshot 投递，多候选直接拉取合并，CPU 测试覆盖静默 decode 断连、
   handler abort、部分准入、慢消费者、末步投递失败和 backend 回收。
+- `ExecutorCapabilities` 新增 `max_batch_seqs` 与 `logprobs` 字段：
+  - 引擎构造时调用 `Scheduler::reconcile_backend_batch_cap` 把调度
+    上限收敛到后端真实能力——修复默认配置下并发超过后端上限
+    （`MAX_SEQS` 默认 4）时整批被株连失败的问题，超出部分改为排队；
+  - `logprobs=false` 的后端在 submit 阶段显式拒绝携带 logprobs 的请求
+    （`UnsupportedGenerationMode`），不再让响应静默缺字段。
+- 引擎逐序列失败归因：`ExecutionOutput` 允许为调度集合的真子集，
+  缺失的 `seq_id` 由引擎 `fail_sequences` 单独标记失败（原因
+  "backend reported per-sequence failure"），不再株连同批序列；
+  `validate_execution_output` 同步放宽为"子集 + 无外部 seq_id"。
+- `TinyLlmExecutor` 逐序列过滤：分配失败、策略 2 容量越界、空块表或
+  超出后端批量的序列被排除出本步 FFI 调用，由引擎归因失败。
+- `build.rs` 增加 CUDA runtime 库搜索路径探测（`CUDA_HOME` /
+  `CUDA_PATH` / `/usr/local/cuda`），修复 `tiny-llm` feature 下
+  `-lcudart` 链接失败。
 - 请求取消与有界背压设计包（`docs/architecture/cancellation-backpressure-design.md`）：
   冻结 request 状态机所有权表、主动取消触发矩阵、四条 channel 的容量与
   overflow 策略、指标语义口径与测试方式；待评审后分 PR 实现（P0-001/002/003）。
+
+### Changed
+- `TinyLlmExecutor` 的 `decode_reserve` 前置限制只在策略 2（连续 KV）
+  下生效：策略 1 后端 `allocate_sequence` 不读 `num_tokens`，此前的
+  `context_len + decode_reserve` 上限是幻影记账；分页容量权威是共享
+  block pool + `max_seq_len`。
 
 ### Fixed
 - 2026-11-08 stop 边界批次：stop 序列命中与 `max_tokens` 到达发生在同一

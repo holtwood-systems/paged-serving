@@ -178,7 +178,9 @@ fn validate_execution_output(
         )));
     }
 
-    if output.seq_ids.len() != batch.seq_ids.len() {
+    // ABI v3：输出可以是 batch 的真子集——缺失的 seq_id 表示后端逐序列
+    // 失败（由引擎归因标记），但不允许出现 batch 之外的 seq_id。
+    if output.seq_ids.len() > batch.seq_ids.len() {
         return Err(EngineError::BackendError(format!(
             "malformed execution output: output has {} sequences but batch has {}",
             output.seq_ids.len(),
@@ -194,9 +196,9 @@ fn validate_execution_output(
     }
 
     let expected: HashSet<SeqId> = batch.seq_ids.iter().copied().collect();
-    if seen != expected {
+    if !seen.is_subset(&expected) {
         return Err(EngineError::BackendError(format!(
-            "malformed execution output: seq_ids {:?} does not match batch seq_ids {:?}",
+            "malformed execution output: seq_ids {:?} contains ids not in batch {:?}",
             seen, expected
         )));
     }
@@ -460,13 +462,23 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_execution_output_rejects_empty_output() {
+    fn test_validate_execution_output_accepts_empty_output() {
+        // ABI v3：空输出合法——全部序列逐序列失败，由引擎按缺失归因。
         let batch = sample_batch();
         let output = ExecutionOutput::default();
-        assert!(matches!(
-            validate_execution_output(&batch, &output),
-            Err(EngineError::BackendError(msg)) if msg.contains("malformed execution output")
-        ));
+        assert!(validate_execution_output(&batch, &output).is_ok());
+    }
+
+    #[test]
+    fn test_validate_execution_output_accepts_partial_subset() {
+        // ABI v3：输出为 batch 的真子集合法（部分序列逐序列失败）。
+        let batch = sample_batch();
+        let output = ExecutionOutput {
+            next_tokens: vec![10],
+            seq_ids: vec![2],
+            logprobs: Vec::new(),
+        };
+        assert!(validate_execution_output(&batch, &output).is_ok());
     }
 
     #[test]
@@ -498,7 +510,7 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_execution_output_rejects_wrong_seq_id_set() {
+    fn test_validate_execution_output_rejects_foreign_seq_id() {
         let batch = sample_batch();
         let output = ExecutionOutput {
             next_tokens: vec![10, 11],
@@ -507,7 +519,7 @@ mod tests {
         };
         assert!(matches!(
             validate_execution_output(&batch, &output),
-            Err(EngineError::BackendError(msg)) if msg.contains("does not match")
+            Err(EngineError::BackendError(msg)) if msg.contains("not in batch")
         ));
     }
 
