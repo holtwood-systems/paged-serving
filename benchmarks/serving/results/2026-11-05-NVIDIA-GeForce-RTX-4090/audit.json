@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "root": "results/2026-11-05-NVIDIA-GeForce-RTX-4090",
+  "formal": false,
+  "errors": [],
+  "warnings": [],
+  "groups": [
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c1",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 186.47755899999999,
+          "min": 156.558686,
+          "max": 204.51493000000002,
+          "relative_range_pct": 25.71689819255948
+        },
+        "output_tokens_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 234.38540130420785,
+          "min": 207.55085511343742,
+          "max": 280.549241746506,
+          "relative_range_pct": 31.14459613392231
+        },
+        "successful_requests_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 1.8311359476891238,
+          "min": 1.6214910555737299,
+          "max": 2.1917909511445783,
+          "relative_range_pct": 31.14459613392231
+        }
+      },
+      "provenance": {
+        "engine_commit": "d7e25189f9732a2859d67de2d7fd005dd2b2d6ea",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c2",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 238.14340833333335,
+          "min": 232.615079,
+          "max": 241.766559,
+          "relative_range_pct": 3.8428441349888267
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 294.07132165537257,
+          "min": 293.34751377220215,
+          "max": 294.7983550442803,
+          "relative_range_pct": 0.4933637404392726
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.297432200432598,
+          "min": 2.2917774513453293,
+          "max": 2.30311214878344,
+          "relative_range_pct": 0.4933637404392726
+        }
+      },
+      "provenance": {
+        "engine_commit": "d7e25189f9732a2859d67de2d7fd005dd2b2d6ea",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c4",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 3217.846012333334,
+          "min": 466.295654,
+          "max": 8448.972676000001,
+          "relative_range_pct": 248.07517175787973
+        },
+        "output_tokens_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 163.12552989353097,
+          "min": 31.91061478701228,
+          "max": 305.254493176679,
+          "relative_range_pct": 167.56658419321195
+        },
+        "successful_requests_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 1.2744182022932107,
+          "min": 0.24930167802353342,
+          "max": 2.3848007279428045,
+          "relative_range_pct": 167.56658419321195
+        }
+      },
+      "provenance": {
+        "engine_commit": "d7e25189f9732a2859d67de2d7fd005dd2b2d6ea",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c8",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 3660.4344969999997,
+          "min": 928.217198,
+          "max": 8563.303698,
+          "relative_range_pct": 208.5841586909293
+        },
+        "output_tokens_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 188.92760078830247,
+          "min": 43.55609252078278,
+          "max": 282.5082754013321,
+          "relative_range_pct": 126.47817570514776
+        },
+        "successful_requests_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 1.475996881158613,
+          "min": 0.34028197281861544,
+          "max": 2.2070959015729072,
+          "relative_range_pct": 126.47817570514776
+        }
+      },
+      "provenance": {
+        "engine_commit": "d7e25189f9732a2859d67de2d7fd005dd2b2d6ea",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    }
+  ],
+  "convergence_rule": {
+    "statistic": "(max-min)/mean",
+    "threshold_pct": 10,
+    "minimum_repeats": 3
+  },
+  "runs": {
+    "discovered": 12,
+    "validated": 12
+  },
+  "status": "passed"
+}
