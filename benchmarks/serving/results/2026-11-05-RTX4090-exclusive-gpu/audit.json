@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "root": "results/2026-11-05-RTX4090-exclusive-gpu",
+  "formal": false,
+  "errors": [],
+  "warnings": [],
+  "groups": [
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c1",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 124.466142,
+          "min": 123.642488,
+          "max": 125.01364400000001,
+          "relative_range_pct": 1.101629710672653
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 284.79293072064297,
+          "min": 284.4117369366902,
+          "max": 285.0837624013899,
+          "relative_range_pct": 0.23596985465867645
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.224944771255023,
+          "min": 2.221966694817892,
+          "max": 2.2272168937608585,
+          "relative_range_pct": 0.23596985465867645
+        }
+      },
+      "provenance": {
+        "engine_commit": "186351e7f346363591c2b5ff708542e38aa34ac0",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c2",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 249.98339400000003,
+          "min": 239.231939,
+          "max": 256.11065,
+          "relative_range_pct": 6.7519328903903135
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 292.8990416328179,
+          "min": 291.5090730198411,
+          "max": 293.74721309057236,
+          "relative_range_pct": 0.7641336271550654
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.28827376275639,
+          "min": 2.2774146329675085,
+          "max": 2.2949001022700966,
+          "relative_range_pct": 0.7641336271550654
+        }
+      },
+      "provenance": {
+        "engine_commit": "186351e7f346363591c2b5ff708542e38aa34ac0",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c4",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 457.07791199999997,
+          "min": 455.569652,
+          "max": 458.89685099999997,
+          "relative_range_pct": 0.7279281961890013
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 300.76072497225806,
+          "min": 297.24215932490443,
+          "max": 304.2396976149137,
+          "relative_range_pct": 2.3266130544986336
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.349693163845766,
+          "min": 2.322204369725816,
+          "max": 2.3768726376165135,
+          "relative_range_pct": 2.3266130544986336
+        }
+      },
+      "provenance": {
+        "engine_commit": "186351e7f346363591c2b5ff708542e38aa34ac0",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c8",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 876.562348,
+          "min": 863.333324,
+          "max": 883.307776,
+          "relative_range_pct": 2.278725756995444
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 302.25922893788726,
+          "min": 294.3617210523138,
+          "max": 306.8073605459208,
+          "relative_range_pct": 4.117538292326066
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.361400226077244,
+          "min": 2.2997009457212014,
+          "max": 2.3969325042650063,
+          "relative_range_pct": 4.117538292326066
+        }
+      },
+      "provenance": {
+        "engine_commit": "186351e7f346363591c2b5ff708542e38aa34ac0",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    }
+  ],
+  "convergence_rule": {
+    "statistic": "(max-min)/mean",
+    "threshold_pct": 10,
+    "minimum_repeats": 3
+  },
+  "runs": {
+    "discovered": 12,
+    "validated": 12
+  },
+  "status": "passed"
+}

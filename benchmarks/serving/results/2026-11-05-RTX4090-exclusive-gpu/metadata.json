@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "vram": "49140 MiB",
+    "driver": "550.107.02"
+  },
+  "software": {
+    "cuda_toolkit": "Build cuda_12.8.r12.8/compiler.35404655_0"
+  },
+  "commits": {
+    "paged_serving": "186351e7f346363591c2b5ff708542e38aa34ac0",
+    "tiny_llm": "01f91f93fe5b1921f55b863c8e98e28e9bd4b947",
+    "dirty": false,
+    "paged_serving_dirty": false,
+    "tiny_llm_dirty": false
+  },
+  "build": {
+    "profile": "release",
+    "cuda_archs": "89"
+  }
+}
