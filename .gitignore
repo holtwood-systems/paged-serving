@@ -30,3 +30,6 @@ coverage/
 # Local git worktrees
 .worktrees/
 worktrees/
+
+# Python 字节码缓存
+tests/fault_injection/__pycache__/
