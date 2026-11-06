@@ -30,13 +30,15 @@
 continuous batching 调度、OpenAI 兼容 API，经 C ABI 驱动真实 CUDA 后端
 （tiny-llm）完成端到端实测，并用故障注入验证资源契约。
 
-**三件可当场讲的事**（全部有归档证据）：
+**三件可当场讲的事**（证据状态明确）：
 
-1. **KV 分页公式逐 block 实测验证**（2026-11-06，Qwen2.5-7B 真实服务）：
-   prompt 14 + 生成 64 = 78 tok，`paged_engine_kv_utilization` 峰值 0.0049
-   = 5 blocks = `ceil(78/16)`，与公式精确一致；末块内部碎片 2 tok（2.6%）。
-   即「分页消灭外部碎片，代价是 ≤ block_size−1 的内部碎片」的直接证据。
-   见 [`tests/evidence/2026-11-06-7b-serving/`](tests/evidence/2026-11-06-7b-serving/README.md)。
+1. **7B 指标审计：先拦下不可信数字**（2026-11-06）：
+   一个 7B canary 包的 c1 TPOT 2.62 ms/token 与 tiny-llm 同模型 bench
+   11.26 ms/token 矛盾，且与 0.5B 正式包的 2.63 ms/token 几乎重合；
+   包内缺 server log、模型/ tokenizer hash 和 GPU 元数据。该包已标记
+   **invalid/unverified**，不进入 TL;DR；新增 `audit_provenance.py`：正式包发布前
+   必须通过，缺 provenance 直接失败。见
+   [`AUDIT.md`](tests/evidence/2026-11-06-7b-serving/AUDIT.md)。
 2. **closed-loop 并发收敛矩阵**（2026-11-05，RTX 4090 独占，0.5B W8A16）：
    c1→c8 共 12 个 run 全部通过 10% 收敛门（`audit.json` 零 error），
    聚合吞吐 284.8→302.3 tok/s（c1 已近饱和，c8 增益 <7%）、TPOT 2.63→20.38 ms、
@@ -204,8 +206,8 @@ SSE 发出 `internal_error`（`slow consumer: event channel overflow`）和 `[DO
 | 高频考点 | 本仓落点（代码 / 证据） |
 |---|---|
 | **PagedAttention 块级分配**：KV 按固定大小 block 分配、逻辑块表映射物理块 | `src/kv_cache.rs` 的 `BlockPool::allocate` / `PageTable::get_block_table` / `KVCacheManager`；`blocks_for_tokens()` 即 `ceil(tokens / block_size)` |
-| **外部碎片 vs 内部碎片**（vLLM 论文报告传统按请求预分配浪费 60–80%+ 显存） | 本仓不重复引用论文数字；用自测闭环：7B 实测 78 tok → 5 blocks 精确一致、末块内部碎片 2.6%（`tests/evidence/2026-11-06-7b-serving/`）；分页后跨请求无外部碎片，代价是每序列 ≤ block_size−1 tok 内部碎片 |
-| **KV Cache 显存公式**：`2 × layers × kv_heads × head_dim × seq × batch × dtype_bytes` | 控制面侧以 block 计数实现同一账本（`paged_engine_kv_utilization` = used/total blocks）；逐 block 实测见 7B 证据包 |
+| **外部碎片 vs 内部碎片**（vLLM 论文报告传统按请求预分配浪费 60–80%+ 显存） | 本仓不重复引用论文数字；`blocks_for_tokens()` 与 BlockPool 单测锁定 `ceil(tokens/block_size)` 和资源守恒。分页后跨请求无外部碎片，代价是每序列 ≤ block_size−1 tok 内部碎片；7B 的 5-block 观测来自 invalid canary，重跑前不作为证据 |
+| **KV Cache 显存公式**：`2 × layers × kv_heads × head_dim × seq × batch × dtype_bytes` | 控制面侧以 block 计数实现同一账本（`paged_engine_kv_utilization` = used/total blocks）；逐 block 计算与单测见 `blocks_for_tokens` / BlockPool，7B serving 包待复核 |
 | **Continuous batching**（请求粒度动态进出批次） | `src/scheduler.rs` 的 `schedule()`：每步 decode 优先 → 在途 prefill → pending 队列；批次每步重组 |
 | **准入控制与 429 语义**（过载拒绝而不是 OOM） | 三层准入见上文「准入控制（三层）」；故障注入 E3 实证 64 并发 → 200×8 + 429×56（`tests/evidence/2026-11-06-fault-injection/`） |
 | **内存水位线 / OOM 防护** | `scheduler.rs` 水位线检查 + 「下一步 decode 增长」预留块（P0-T2）；`--memory-threshold` 默认 0.9 |

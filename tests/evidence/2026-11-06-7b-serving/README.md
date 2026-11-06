@@ -1,7 +1,15 @@
 # 7B serving 实验包（2026-11-06）
 
-Qwen2.5-7B-Instruct Q4_K_M 经 `--backend tiny-llm` 的 serving 实测。
-含一组已量化结果与一处**未解异常**（如实记录，未定性）。
+> **Status: invalid / unverified（2026-11-06 审计）**
+>
+> 本包的 c1 TPOT 2.62 ms/token 与 tiny-llm 同模型 7B bench 11.26 ms/token
+> 矛盾，且与 0.5B 正式包的 2.63 ms/token 几乎重合；包内缺少 server log、
+> 模型/ tokenizer hash、GPU 元数据和正式重复/预热。按本仓正式门槛，这不是
+> 性能结果。保留为负结果和审计样本，不用于 README、简历或跨引擎比较。
+> 详见 [`AUDIT.md`](AUDIT.md)。
+
+以下保留本次 canary 的原始观察与未解异常，供审计和重跑对照；
+它们不是可引用的 7B 性能结论，包状态以上方 invalid/unverified 为准。
 
 ## 配置
 
@@ -11,16 +19,19 @@ Qwen2.5-7B-Instruct Q4_K_M 经 `--backend tiny-llm` 的 serving 实测。
 - RTX 4090 / CUDA 12.8.61 / driver 550.107.02
 - 背景干扰：外部租户进程占 ~3.5GiB
 
-## 已量化结果
+## 原始观察（不可引用）
 
-### KV 分页公式实测（面试题"KV Cache 占多大显存"）
+### KV 分页公式观测（面试题"KV Cache 占多大显存"）
 
 prompt 14 tok + 64 生成 = 78 tok → `paged_engine_kv_utilization` 峰值
 0.0049 ≈ **5 blocks** = `ceil(78/16)`，与分页公式精确一致；
 末块内碎片 2 tok（2.6%）。分页把外部碎片清零、代价是 ≤block_size-1
-的内部碎片——实测印证。
+的内部碎片——本次观测；模型身份与 tokenizer 未证明，不能写成 7B 的正式证据。
 
 ### closed-loop 并发扫描（max_tokens=64，work.jsonl）
+
+> 下表只是本次 canary 的原始观测，不是可引用的 7B 性能结果；单轮、0 预热，
+> 且模型/计时 provenance 未补齐。
 
 | 并发 | TTFT p50 | TPOT p50 | 聚合吞吐 | 备注 |
 |---|---|---|---|---|

@@ -19,6 +19,8 @@ benchmarks/serving/
 ├── plots.py               # 语义校验后读取 summary，生成图表与 audit.json
 ├── validate_results.py    # 原始请求/summary/metadata 一致性与收敛诊断
 ├── test_validate_results.py # 标准库离线正/负夹具门禁
+├── audit_provenance.py    # 正式包 provenance 门禁（模型/后端/硬件/server log）
+├── test_audit_provenance.py # provenance 门禁的正/负夹具
 ├── RESULT_REPORT_TEMPLATE.md # 人工结论、限制与复现命令模板
 └── results/<date>-<gpu>/  # 原始请求 + run summary + 环境/模型 metadata + 图表
 ```
@@ -47,6 +49,49 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
 
 标准库测试覆盖原始请求、聚合数字和配置被损坏后的拒绝行为，不需要 GPU 或 matplotlib。
 CI 单独运行此门禁并只读重验历史正式结果；不会因为 429 或 `non_converged` 而隐藏负结果。
+
+## Provenance 审计
+
+`validate_results.py` 只证明包内数字自洽，不证明“跑的是哪个模型、哪个后端、
+哪张卡”。正式包必须在结果目录放 `provenance.json`，并附带非空 `server.log`。
+最小字段：
+
+```json
+{
+  "schema_version": 1,
+  "status": "valid",
+  "engine": {"name": "paged-serving", "commit": "<40-hex>"},
+  "backend": {"name": "tiny-llm", "commit": "<40-hex>"},
+  "model": {
+    "path": "/abs/model.gguf",
+    "sha256": "<64-hex>",
+    "bytes": 123,
+    "architecture": "qwen2",
+    "num_layers": 28,
+    "hidden_dim": 3584,
+    "num_kv_heads": 4,
+    "head_dim": 128
+  },
+  "tokenizer": {"kind": "huggingface", "path": "/abs/tokenizer.json", "sha256": "<64-hex>"},
+  "hardware": {"gpu": "NVIDIA GeForce RTX 4090", "driver": "550.107.02", "cuda": "12.8.61"},
+  "command": ["paged-serving", "--serve", "--backend", "tiny-llm",
+              "--model-path", "/abs/model.gguf", "--tokenizer", "/abs/tokenizer.json"],
+  "server_log": "server.log",
+  "load": {"ready_after_s": 300, "observed_gpu_mem_mib": 18432}
+}
+```
+
+`status` 只能是 `valid` / `invalid` / `unverified`。正式发布用：
+
+```bash
+python3 benchmarks/serving/audit_provenance.py --expect-valid --check-files <results-dir>
+```
+
+缺 `provenance.json`、model/tokenizer hash、GGUF 几何、GPU/driver/CUDA、启动
+命令、`server.log` 或加载观测时直接失败；`server.log` 至少要包含 `Engine ready`
+或 `tinyllm_load` 标记。`--check-files` 要求 model/tokenizer
+文件在本机可读，并重算 SHA-256 与 bytes；远端包不要加该参数，但不能省略 hash 字段。
+历史 schema-v1 包不回溯，只有新正式包受此门禁约束。
 
 ## 快速开始
 

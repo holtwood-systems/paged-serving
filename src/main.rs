@@ -217,6 +217,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!();
 
     let engine = create_engine(config.clone(), args.backend, args.model_path.as_deref())?;
+    println!(
+        "Engine ready: backend={:?}, model_path={:?}, tokenizer={:?}",
+        args.backend, args.model_path, config.tokenizer.kind
+    );
+    println!();
 
     if args.serve {
         let bind_addr = format!("{}:{}", config.serving.host, config.serving.port);

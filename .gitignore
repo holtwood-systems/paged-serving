@@ -32,4 +32,5 @@ coverage/
 worktrees/
 
 # Python 字节码缓存
-tests/fault_injection/__pycache__/
+__pycache__/
+*.pyc
