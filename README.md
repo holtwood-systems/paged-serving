@@ -24,6 +24,34 @@
 
 ---
 
+## 亮点速览（30 秒版）
+
+**一句话定位**：Rust 实现的 LLM serving 控制面——PagedAttention 式分页 KV、
+continuous batching 调度、OpenAI 兼容 API，经 C ABI 驱动真实 CUDA 后端
+（tiny-llm）完成端到端实测，并用故障注入验证资源契约。
+
+**三件可当场讲的事**（全部有归档证据）：
+
+1. **KV 分页公式逐 block 实测验证**（2026-11-06，Qwen2.5-7B 真实服务）：
+   prompt 14 + 生成 64 = 78 tok，`paged_engine_kv_utilization` 峰值 0.0049
+   = 5 blocks = `ceil(78/16)`，与公式精确一致；末块内部碎片 2 tok（2.6%）。
+   即「分页消灭外部碎片，代价是 ≤ block_size−1 的内部碎片」的直接证据。
+   见 [`tests/evidence/2026-11-06-7b-serving/`](tests/evidence/2026-11-06-7b-serving/README.md)。
+2. **closed-loop 并发收敛矩阵**（2026-11-05，RTX 4090 独占，0.5B W8A16）：
+   c1→c8 共 12 个 run 全部通过 10% 收敛门（`audit.json` 零 error），
+   聚合吞吐 284.8→302.3 tok/s（c1 已近饱和，c8 增益 <7%）、TPOT 2.63→20.38 ms、
+   TTFT p95 124.5→876.6 ms；768/768 请求成功、token coverage 100%。
+   另有一份共享 GPU 环境的同参数对照包：外部租户占卡使 c8 TPOT 63.2 ms
+   （干扰放大约 3 倍）——环境归因用数据闭环，不靠口头解释。
+   见 [`benchmarks/serving/results/2026-11-05-RTX4090-exclusive-gpu/`](benchmarks/serving/results/2026-11-05-RTX4090-exclusive-gpu/report.md)。
+3. **故障注入抓出真实准入缺陷**（2026-11-06，5/5 实验断言全绿）：
+   64 并发 flood 首跑全部 500（调度器 `max_num_seqs=256` 未与后端容量 8 联动），
+   修复后同场景 **200×8 + 429×56，零 5xx、零挂起**；SSE 中途 RST、慢消费者、
+   泊松混合流量下资源全部回零。见
+   [`tests/evidence/2026-11-06-fault-injection/`](tests/evidence/2026-11-06-fault-injection/README.md)。
+
+> 汇总入口：[`BENCHMARKS.md`](BENCHMARKS.md)（全部结果包、审计口径、进行中实验）。
+
 ## 项目概述
 
 Paged-Serving 是一个基于 Rust 构建的 LLM Serving 控制面，以模块化、可测试的架构
@@ -167,6 +195,24 @@ SSE 发出 `internal_error`（`slow consumer: event channel overflow`）和 `[DO
 每候选一项；这不是进程内存字节上界，完整输出、logprobs 和网络缓冲另计。
 默认 64 未经真实网络负载调优。实现取舍与测试定位见
 [取消与背压笔记](.agents/notes/implemented/feature/2026-10-04-bounded-events-and-cancellation.md)。
+
+## 面试考点映射
+
+被问到 serving 高频考点时，每一条都能落到本仓的具体文件与实测证据，
+而不是只背概念：
+
+| 高频考点 | 本仓落点（代码 / 证据） |
+|---|---|
+| **PagedAttention 块级分配**：KV 按固定大小 block 分配、逻辑块表映射物理块 | `src/kv_cache.rs` 的 `BlockPool::allocate` / `PageTable::get_block_table` / `KVCacheManager`；`blocks_for_tokens()` 即 `ceil(tokens / block_size)` |
+| **外部碎片 vs 内部碎片**（vLLM 论文报告传统按请求预分配浪费 60–80%+ 显存） | 本仓不重复引用论文数字；用自测闭环：7B 实测 78 tok → 5 blocks 精确一致、末块内部碎片 2.6%（`tests/evidence/2026-11-06-7b-serving/`）；分页后跨请求无外部碎片，代价是每序列 ≤ block_size−1 tok 内部碎片 |
+| **KV Cache 显存公式**：`2 × layers × kv_heads × head_dim × seq × batch × dtype_bytes` | 控制面侧以 block 计数实现同一账本（`paged_engine_kv_utilization` = used/total blocks）；逐 block 实测见 7B 证据包 |
+| **Continuous batching**（请求粒度动态进出批次） | `src/scheduler.rs` 的 `schedule()`：每步 decode 优先 → 在途 prefill → pending 队列；批次每步重组 |
+| **准入控制与 429 语义**（过载拒绝而不是 OOM） | 三层准入见上文「准入控制（三层）」；故障注入 E3 实证 64 并发 → 200×8 + 429×56（`tests/evidence/2026-11-06-fault-injection/`） |
+| **内存水位线 / OOM 防护** | `scheduler.rs` 水位线检查 + 「下一步 decode 增长」预留块（P0-T2）；`--memory-threshold` 默认 0.9 |
+| **请求取消 / 慢消费者背压** | `RequestGuard` + 每候选有界 mailbox（容量 64）；故障注入 E1/E2/E4/E5 验证资源回零与慢消费者隔离 |
+| **prefix caching（本仓未实现，为什么）** | 见「冻结边界」：控制面可复用 `PageTable` 条目实现 radix 前缀共享，但需后端配合跨序列 block 引用计数；相关分层实践在姊妹仓 [kvtier](https://github.com/holtwood-systems/kvtier)（SGLang `UnifiedRadixCache` + HiCache）中有实测 |
+| **抢占 / preemption（本仓未实现，替代策略是什么）** | 见「抢占策略与边界」：水位线拒绝新 prefill + decode 增长预留，并如实说明其长期最坏情况边界 |
+| **PD 分离 / chunked prefill（未实现）** | 明确列为不做的边界并说明原因；架构上 prefill/decode 共享同一调度步，是理解两者为何可分离的反面参照 |
 
 ## 快速开始
 
@@ -327,6 +373,8 @@ for result in results {
 
 | 资源 | 链接 |
 |------|------|
+| **基准汇总** | [BENCHMARKS.md](BENCHMARKS.md)（全部结果包索引、审计口径、进行中实验占位） |
+| **路线图** | [ROADMAP.md](ROADMAP.md) |
 | **API 文档** | `cargo doc --open` |
 | **贡献指南** | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | **更新日志** | [CHANGELOG.md](CHANGELOG.md) |
