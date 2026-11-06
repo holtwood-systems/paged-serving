@@ -133,7 +133,7 @@ pub use server::{
     create_router, create_router_with_engine, create_router_with_engine_and_shutdown,
 };
 #[cfg(feature = "tiny-llm")]
-pub use tiny_llm_executor::TinyLlmExecutor;
+pub use tiny_llm_executor::{clamp_config_to_backend, TinyLlmExecutor};
 pub use tokenizer::{
     build_tokenizer, HuggingFaceTokenizer, IncrementalDecoder, SimpleTokenizer, TokenizerTrait,
 };

@@ -3,7 +3,7 @@
 use clap::{Parser, ValueEnum};
 use log::info;
 #[cfg(feature = "tiny-llm")]
-use paged_serving::{build_tokenizer, Scheduler, TinyLlmExecutor};
+use paged_serving::{build_tokenizer, clamp_config_to_backend, Scheduler, TinyLlmExecutor};
 use paged_serving::{
     create_router_with_engine_and_shutdown, EngineConfig, GenerationParams, InferenceEngine,
     TokenizerConfig, TokenizerKind,
@@ -113,6 +113,9 @@ fn create_engine(
                     .to_str()
                     .ok_or("--model-path must be valid UTF-8")?;
                 let tokenizer = build_tokenizer(&config)?;
+                // 准入与单批上限夹到后端容量：过载走 429，而不是 batch 超限 500。
+                let mut config = config;
+                clamp_config_to_backend(&mut config);
                 let scheduler = Scheduler::new(config.clone());
                 let executor = TinyLlmExecutor::new(model_path, config.clone())?;
                 Ok(InferenceEngine::with_components(

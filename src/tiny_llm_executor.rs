@@ -55,6 +55,23 @@ const MAX_SEQS_ENV: &str = "PAGED_SERVING_TINY_LLM_MAX_SEQS";
 /// decode 预留调节：`PAGED_SERVING_TINY_LLM_DECODE_RESERVE=<n>`（默认 512，下限 0）。
 const DECODE_RESERVE_ENV: &str = "PAGED_SERVING_TINY_LLM_DECODE_RESERVE";
 
+/// 后端最大并发序列容量（`PAGED_SERVING_TINY_LLM_MAX_SEQS`，默认 4，下限 1）。
+pub fn backend_max_seqs() -> u32 {
+    env_i32_or(MAX_SEQS_ENV, DEFAULT_MAX_CONCURRENT_SEQS).max(1) as u32
+}
+
+/// 把调度器配置夹到后端容量：准入上限与单批上限都不得超过后端可执行
+/// 大小，否则过载请求会在 batch 组层被后端拒绝（500），而不是在准入
+/// 阶段收到 429。
+pub fn clamp_config_to_backend(config: &mut EngineConfig) {
+    clamp_config(config, backend_max_seqs());
+}
+
+fn clamp_config(config: &mut EngineConfig, backend_max: u32) {
+    config.max_num_seqs = config.max_num_seqs.min(backend_max);
+    config.max_batch_size = config.max_batch_size.min(backend_max);
+}
+
 /// 读取 i32 环境变量；缺失/非法值回退默认（非法值记警告，避免静默误配置）。
 fn env_i32_or(name: &str, default: i32) -> i32 {
     match std::env::var(name) {
@@ -293,6 +310,27 @@ impl GPUExecutorTrait for TinyLlmExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn clamp_config_caps_admission_and_batch_to_backend() {
+        // 回归：过载时准入必须先于 batch 组层生效（429 而非 500）。
+        let mut config = EngineConfig::default();
+        config.max_num_seqs = 256;
+        config.max_batch_size = 32;
+        clamp_config(&mut config, 8);
+        assert_eq!(config.max_num_seqs, 8);
+        assert_eq!(config.max_batch_size, 8);
+    }
+
+    #[test]
+    fn clamp_config_keeps_config_below_backend() {
+        let mut config = EngineConfig::default();
+        config.max_num_seqs = 4;
+        config.max_batch_size = 2;
+        clamp_config(&mut config, 8);
+        assert_eq!(config.max_num_seqs, 4);
+        assert_eq!(config.max_batch_size, 2);
+    }
 
     #[test]
     fn test_alloc_tokens_for_capacity_formula() {
