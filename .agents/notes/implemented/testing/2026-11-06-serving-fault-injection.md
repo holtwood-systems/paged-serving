@@ -30,6 +30,8 @@ gauge 做断言，输出 JSON 证据包到 `tests/evidence/<date>-fault-injectio
   inflight 回零。
 - **E4 nonstream_abort**：非流式请求发出后 50ms 内断连；断言
   cancelled +1 且资源回零。
+- **E5 poisson_mixed**：泊松开环流量（loadgen）与 mid-stream RST
+  并发注入；断言正常流量零失败、断连不计入 errors_total。
 
 每个实验用"快照→扰动→settle 轮询（inflight/active 回零，超时即
 失败）→快照"的模板；失败以非零退出码和 JSON 内 assertion 明细

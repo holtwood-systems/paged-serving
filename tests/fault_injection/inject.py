@@ -19,6 +19,7 @@ import json
 import os
 import socket
 import struct
+import subprocess
 import sys
 import threading
 import time
@@ -365,11 +366,99 @@ def run_e4(args) -> dict:
     return {"assertions": assertions, "before": before, "after": results["mid_generation"]["after"], "runs": results}
 
 
+def run_e5(args) -> dict:
+    """混合负载：泊松开环流量 + 周期性 mid-stream 断连。
+
+    真实场景里客户端断连与正常流量并存。断言：注入期间正常流量
+    零失败（断连不污染其他请求）、服务无 5xx、资源回零。
+    """
+    before = snapshot(args.base_url)
+    dataset = args.dataset
+    if not dataset or not os.path.exists(dataset):
+        return {
+            "assertions": [
+                {
+                    "name": "dataset_available",
+                    "ok": False,
+                    "detail": f"需要 --dataset（jsonl），当前 {dataset!r} 不可用",
+                }
+            ]
+        }
+    out_dir = args.out and os.path.dirname(args.out) or "."
+    per_req = os.path.join(out_dir, "e5-per-request.jsonl")
+    summary = os.path.join(out_dir, "e5-summary.json")
+    cmd = [
+        args.loadgen,
+        "--base-url",
+        args.base_url,
+        "--mode",
+        "poisson",
+        "--rate",
+        str(args.e5_rate),
+        "--seed",
+        str(args.seed),
+        "--dataset",
+        dataset,
+        "--requests",
+        str(args.e5_requests),
+        "--warmup-secs",
+        "5",
+        "--max-tokens",
+        "32",
+        "--out",
+        per_req,
+        "--summary-out",
+        summary,
+        "--model",
+        args.model,
+    ]
+    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    # 注入 3 次 mid-stream 断连，间隔 2s，与流量重叠
+    for _ in range(3):
+        time.sleep(2.0)
+        body = {"model": args.model, "prompt": "E5 混合负载断连。", "max_tokens": 256, "stream": True}
+        sock = open_stream(args.base_url, body)
+        read_stream_events(sock, 1)
+        rst_close(sock)
+    rc = proc.wait(timeout=args.request_timeout + 60)
+    settled, after = settle(args.base_url, timeout=120.0)
+    assertions: list[dict] = []
+    record(assertions, "loadgen_exit_ok", rc == 0, f"loadgen rc={rc}")
+    ok_summary = False
+    if os.path.exists(summary):
+        with open(summary, encoding="utf-8") as fh:
+            data = json.load(fh)
+        ok_summary = True
+        # loadgen summary 形如 {"requests": {"total": N, "success": M, ...}}
+        agg = data.get("requests") if isinstance(data.get("requests"), dict) else data
+        succ = agg.get("success")
+        total = agg.get("total")
+        record(
+            assertions,
+            "normal_traffic_all_ok",
+            (succ is not None and total is not None and succ == total),
+            f"successes={succ} total={total} failed={agg.get('failed')}",
+        )
+        record(assertions, "summary_written", True, f"{summary}")
+    if not ok_summary:
+        record(assertions, "normal_traffic_all_ok", False, "loadgen summary 未生成")
+    record(
+        assertions,
+        "errors_not_inflated",
+        delta(after, before, "paged_errors_total") <= 0,
+        f"errors_total 增量 {delta(after, before, 'paged_errors_total')}（断连不应计错误）",
+    )
+    record(assertions, "resources_settled", settled, "inflight/active/kv 回零")
+    record(assertions, "healthz_ok", healthz(args.base_url) == 200, "服务仍健康")
+    return {"assertions": assertions, "before": before, "after": after}
+
+
 EXPERIMENTS = {
     "E1": run_e1,
     "E2": run_e2,
     "E3": run_e3,
     "E4": run_e4,
+    "E5": run_e5,
 }
 
 
@@ -377,7 +466,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="serving 客户端侧故障注入")
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--model", default="paged-serving")
-    parser.add_argument("--experiments", default="E1,E2,E3,E4")
+    parser.add_argument("--experiments", default="E1,E2,E3,E4,E5")
     parser.add_argument("--out", default=None, help="JSON 输出路径")
     parser.add_argument("--server-pid", type=int, default=None)
     parser.add_argument("--stall-secs", type=float, default=25.0)
@@ -385,6 +474,11 @@ def main() -> int:
     parser.add_argument("--flood", type=int, default=64)
     parser.add_argument("--request-timeout", type=float, default=180.0)
     parser.add_argument("--abort-delay-ms", type=float, default=50.0)
+    parser.add_argument("--dataset", default=None, help="E5 用的 jsonl 数据集")
+    parser.add_argument("--loadgen", default="./target/release/loadgen")
+    parser.add_argument("--e5-rate", type=float, default=1.0)
+    parser.add_argument("--e5-requests", type=int, default=20)
+    parser.add_argument("--seed", type=int, default=20261106)
     parser.add_argument(
         "--midgen-abort-ms",
         type=float,

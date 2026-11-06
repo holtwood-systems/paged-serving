@@ -27,7 +27,7 @@ python3 tests/fault_injection/inject.py --base-url http://127.0.0.1:3000 \
   --server-pid <pid> --out tests/evidence/2026-11-06-fault-injection/inject-<ts>.json
 ```
 
-## 结果（4/4 实验 pass，全部断言绿）
+## 结果（5/5 实验 pass，全部断言绿）
 
 | 实验 | 故障 | 断言与观察 |
 |---|---|---|
@@ -35,6 +35,7 @@ python3 tests/fault_injection/inject.py --base-url http://127.0.0.1:3000 \
 | E2 slow_consumer | 读 1 个事件后停顿 25s（event mailbox 容量 64 → 溢出） | 停顿期间并发探针正常（**慢消费者不拖垮其他请求**）；RSS 增长 26.8 MiB（<512 上限，**有界**）；溢出后流被终止（连接关闭）；资源回零 |
 | E3 flood_admission | 64 并发非流式短请求（后端容量 8） | **200×8 + 429×56，零 5xx、零挂起**；`requests_total` 增量恰为 64；资源回零 |
 | E4 nonstream_abort | 准入前（50ms）与生成中（300ms）断连 | 生成中断连 `cancelled` +2；两个时点资源均回零；准入前断连无终态计数（未进引擎，不泄漏） |
+| E5 poisson_mixed | 泊松开环 1 req/s × 20 请求 + 期间 3 次 mid-stream RST | 正常流量 **20/20 成功、0 失败**；`errors_total` 增量 0（断连不计错误）；资源回零；**断连不污染并存流量** |
 
 ## 本证据抓出的真实缺陷与修复（同批提交）
 

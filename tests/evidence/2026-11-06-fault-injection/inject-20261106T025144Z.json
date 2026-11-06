@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "started_at_utc": "2026-11-06T02:15:14Z",
+  "started_at_utc": "2026-11-06T02:51:44Z",
   "base_url": "http://127.0.0.1:3000",
-  "server_pid": 327683,
+  "server_pid": 348972,
   "config": {
     "stall_secs": 25.0,
     "flood": 64,
@@ -38,26 +38,26 @@
         }
       ],
       "before": {
-        "paged_requests_total": 70.0,
+        "paged_requests_total": 160.0,
         "paged_errors_total": 56.0,
         "paged_inflight_requests": 0.0,
-        "paged_streaming_requests_total": 2.0,
+        "paged_streaming_requests_total": 92.0,
         "paged_engine_active_sequences": 0.0,
         "paged_engine_kv_utilization": 0.0,
-        "paged_engine_completed_requests": 12.0,
+        "paged_engine_completed_requests": 92.0,
         "paged_engine_failed_requests": 0.0,
-        "paged_engine_cancelled_requests": 2.0
+        "paged_engine_cancelled_requests": 12.0
       },
       "after": {
-        "paged_requests_total": 71.0,
+        "paged_requests_total": 161.0,
         "paged_errors_total": 56.0,
         "paged_inflight_requests": 0.0,
-        "paged_streaming_requests_total": 3.0,
+        "paged_streaming_requests_total": 93.0,
         "paged_engine_active_sequences": 0.0,
         "paged_engine_kv_utilization": 0.0,
-        "paged_engine_completed_requests": 12.0,
+        "paged_engine_completed_requests": 92.0,
         "paged_engine_failed_requests": 0.0,
-        "paged_engine_cancelled_requests": 3.0
+        "paged_engine_cancelled_requests": 13.0
       },
       "status": "pass"
     },
@@ -86,7 +86,7 @@
         {
           "name": "rss_bounded",
           "ok": true,
-          "detail": "停顿期 RSS 增长 26.8 MiB (<512.0 MiB)"
+          "detail": "未提供 --server-pid，跳过 RSS 断言（inconclusive）"
         },
         {
           "name": "stream_terminated_cleanly",
@@ -95,31 +95,31 @@
         }
       ],
       "before": {
-        "paged_requests_total": 72.0,
+        "paged_requests_total": 162.0,
         "paged_errors_total": 56.0,
         "paged_inflight_requests": 0.0,
-        "paged_streaming_requests_total": 3.0,
+        "paged_streaming_requests_total": 93.0,
         "paged_engine_active_sequences": 0.0,
         "paged_engine_kv_utilization": 0.0,
-        "paged_engine_completed_requests": 13.0,
+        "paged_engine_completed_requests": 93.0,
         "paged_engine_failed_requests": 0.0,
-        "paged_engine_cancelled_requests": 3.0
+        "paged_engine_cancelled_requests": 13.0
       },
       "after": {
-        "paged_requests_total": 74.0,
+        "paged_requests_total": 164.0,
         "paged_errors_total": 56.0,
         "paged_inflight_requests": 0.0,
-        "paged_streaming_requests_total": 4.0,
+        "paged_streaming_requests_total": 94.0,
         "paged_engine_active_sequences": 0.0,
         "paged_engine_kv_utilization": 0.0,
-        "paged_engine_completed_requests": 15.0,
+        "paged_engine_completed_requests": 95.0,
         "paged_engine_failed_requests": 0.0,
-        "paged_engine_cancelled_requests": 3.0
+        "paged_engine_cancelled_requests": 13.0
       },
       "rss_kb": {
-        "before": 634568,
-        "during": 662024,
-        "after": 662024
+        "before": null,
+        "during": null,
+        "after": null
       },
       "status": "pass"
     },
@@ -152,26 +152,26 @@
         }
       ],
       "before": {
-        "paged_requests_total": 74.0,
+        "paged_requests_total": 164.0,
         "paged_errors_total": 56.0,
         "paged_inflight_requests": 0.0,
-        "paged_streaming_requests_total": 4.0,
+        "paged_streaming_requests_total": 94.0,
         "paged_engine_active_sequences": 0.0,
         "paged_engine_kv_utilization": 0.0,
-        "paged_engine_completed_requests": 15.0,
+        "paged_engine_completed_requests": 95.0,
         "paged_engine_failed_requests": 0.0,
-        "paged_engine_cancelled_requests": 3.0
+        "paged_engine_cancelled_requests": 13.0
       },
       "after": {
-        "paged_requests_total": 138.0,
+        "paged_requests_total": 228.0,
         "paged_errors_total": 112.0,
         "paged_inflight_requests": 0.0,
-        "paged_streaming_requests_total": 4.0,
+        "paged_streaming_requests_total": 94.0,
         "paged_engine_active_sequences": 0.0,
         "paged_engine_kv_utilization": 0.0,
-        "paged_engine_completed_requests": 23.0,
+        "paged_engine_completed_requests": 103.0,
         "paged_engine_failed_requests": 0.0,
-        "paged_engine_cancelled_requests": 3.0
+        "paged_engine_cancelled_requests": 13.0
       },
       "codes": {
         "200": 8,
@@ -185,7 +185,7 @@
         {
           "name": "pre_admission_terminal_state",
           "ok": true,
-          "detail": "cancelled=0 completed=0，无终态计数"
+          "detail": "cancelled 增量 1.0"
         },
         {
           "name": "pre_admission_resources_settled",
@@ -195,7 +195,7 @@
         {
           "name": "mid_generation_terminal_state",
           "ok": true,
-          "detail": "cancelled 增量 2.0"
+          "detail": "cancelled 增量 1.0"
         },
         {
           "name": "mid_generation_resources_settled",
@@ -209,65 +209,122 @@
         }
       ],
       "before": {
-        "paged_requests_total": 140.0,
+        "paged_requests_total": 230.0,
         "paged_errors_total": 112.0,
         "paged_inflight_requests": 0.0,
-        "paged_streaming_requests_total": 4.0,
+        "paged_streaming_requests_total": 94.0,
         "paged_engine_active_sequences": 0.0,
         "paged_engine_kv_utilization": 0.0,
-        "paged_engine_completed_requests": 23.0,
+        "paged_engine_completed_requests": 103.0,
         "paged_engine_failed_requests": 0.0,
-        "paged_engine_cancelled_requests": 5.0
+        "paged_engine_cancelled_requests": 15.0
       },
       "after": {
-        "paged_requests_total": 140.0,
+        "paged_requests_total": 230.0,
         "paged_errors_total": 112.0,
         "paged_inflight_requests": 0.0,
-        "paged_streaming_requests_total": 4.0,
+        "paged_streaming_requests_total": 94.0,
         "paged_engine_active_sequences": 0.0,
         "paged_engine_kv_utilization": 0.0,
-        "paged_engine_completed_requests": 23.0,
+        "paged_engine_completed_requests": 103.0,
         "paged_engine_failed_requests": 0.0,
-        "paged_engine_cancelled_requests": 5.0
+        "paged_engine_cancelled_requests": 15.0
       },
       "runs": {
         "pre_admission": {
           "delay_ms": 50.0,
           "settled": true,
           "after": {
-            "paged_requests_total": 139.0,
+            "paged_requests_total": 229.0,
             "paged_errors_total": 112.0,
             "paged_inflight_requests": 0.0,
-            "paged_streaming_requests_total": 4.0,
+            "paged_streaming_requests_total": 94.0,
             "paged_engine_active_sequences": 0.0,
             "paged_engine_kv_utilization": 0.0,
-            "paged_engine_completed_requests": 23.0,
+            "paged_engine_completed_requests": 103.0,
             "paged_engine_failed_requests": 0.0,
-            "paged_engine_cancelled_requests": 3.0
+            "paged_engine_cancelled_requests": 14.0
           }
         },
         "mid_generation": {
           "delay_ms": 300.0,
           "settled": true,
           "after": {
-            "paged_requests_total": 140.0,
+            "paged_requests_total": 230.0,
             "paged_errors_total": 112.0,
             "paged_inflight_requests": 0.0,
-            "paged_streaming_requests_total": 4.0,
+            "paged_streaming_requests_total": 94.0,
             "paged_engine_active_sequences": 0.0,
             "paged_engine_kv_utilization": 0.0,
-            "paged_engine_completed_requests": 23.0,
+            "paged_engine_completed_requests": 103.0,
             "paged_engine_failed_requests": 0.0,
-            "paged_engine_cancelled_requests": 5.0
+            "paged_engine_cancelled_requests": 15.0
           }
         }
       },
       "status": "pass"
+    },
+    "E5": {
+      "assertions": [
+        {
+          "name": "loadgen_exit_ok",
+          "ok": true,
+          "detail": "loadgen rc=0"
+        },
+        {
+          "name": "normal_traffic_all_ok",
+          "ok": true,
+          "detail": "successes=20 total=20 failed=0"
+        },
+        {
+          "name": "summary_written",
+          "ok": true,
+          "detail": "tests/evidence/2026-11-06-fault-injection/e5-summary.json"
+        },
+        {
+          "name": "errors_not_inflated",
+          "ok": true,
+          "detail": "errors_total 增量 0.0（断连不应计错误）"
+        },
+        {
+          "name": "resources_settled",
+          "ok": true,
+          "detail": "inflight/active/kv 回零"
+        },
+        {
+          "name": "healthz_ok",
+          "ok": true,
+          "detail": "服务仍健康"
+        }
+      ],
+      "before": {
+        "paged_requests_total": 230.0,
+        "paged_errors_total": 112.0,
+        "paged_inflight_requests": 0.0,
+        "paged_streaming_requests_total": 94.0,
+        "paged_engine_active_sequences": 0.0,
+        "paged_engine_kv_utilization": 0.0,
+        "paged_engine_completed_requests": 103.0,
+        "paged_engine_failed_requests": 0.0,
+        "paged_engine_cancelled_requests": 15.0
+      },
+      "after": {
+        "paged_requests_total": 260.0,
+        "paged_errors_total": 112.0,
+        "paged_inflight_requests": 0.0,
+        "paged_streaming_requests_total": 124.0,
+        "paged_engine_active_sequences": 0.0,
+        "paged_engine_kv_utilization": 0.0,
+        "paged_engine_completed_requests": 130.0,
+        "paged_engine_failed_requests": 0.0,
+        "paged_engine_cancelled_requests": 18.0
+      },
+      "status": "pass"
     }
   },
-  "finished_at_utc": "2026-11-06T02:15:43Z",
+  "finished_at_utc": "2026-11-06T02:52:36Z",
   "summary": {
-    "experiments": 4,
+    "experiments": 5,
     "failures": 0
   }
 }
