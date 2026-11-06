@@ -48,7 +48,7 @@
 
 ## 2. Base evidence (G0)
 
-- **Repository**：`open-infra-ai/paged-serving`
+- **Repository**：`holtwood-systems/paged-serving`
 - **Base branch**：`master` @ `4986a05019f81ca53d1b4b909e9c7d4fda142a04`
 - **Dirty state**：clean
 - **代码锚点**：

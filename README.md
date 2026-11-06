@@ -1,10 +1,10 @@
 # Paged-Serving
 
-> 📚 Portfolio map: https://github.com/open-infra-ai/open-infra-ai
+> 📚 Portfolio map: https://github.com/holtwood-systems/portfolio
 
 <div align="center">
 
-[![CI](https://github.com/open-infra-ai/paged-serving/actions/workflows/ci.yml/badge.svg)](https://github.com/open-infra-ai/paged-serving/actions/workflows/ci.yml)
+[![CI](https://github.com/holtwood-systems/paged-serving/actions/workflows/ci.yml/badge.svg)](https://github.com/holtwood-systems/paged-serving/actions/workflows/ci.yml)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/Rust-1.88%2B-orange?logo=rust)](https://www.rust-lang.org/)
@@ -14,7 +14,7 @@
 > **开发状态**：**active**（Serving 评测口径与跨引擎验证持续进行）；控制面核心
 > （分页 KV / continuous batching / 调度 / API）v0.2.0 已稳定；
 > 计算后端双路径：默认 CPU 参考执行器（确定性，供测试/CI），`tiny-llm` cargo feature
-> 下接入 [tiny-llm](https://github.com/open-infra-ai/tiny-llm) 真实 CUDA 后端，并已启用
+> 下接入 [tiny-llm](https://github.com/holtwood-systems/tiny-llm) 真实 CUDA 后端，并已启用
 > **分页 KV（策略 1：block_tables 真实上传）**——3 并发 e2e 检查资源守恒；
 > Hello 请求与历史 llama.cpp greedy token oracle 全序列对齐，数学请求仅检查公共前缀。
 
@@ -44,7 +44,7 @@ Paged-Serving 是一个基于 Rust 构建的 LLM Serving 控制面，以模块�
 | **自动化验证** | unit、integration、server integration 与 property tests | ✅ |
 | **tiny-llm 真实后端** | `tiny-llm` feature 下接入 CUDA 后端，分页 KV（策略 1）默认启用，`PAGED_SERVING_TINY_LLM_STRATEGY=2` 可回退连续 KV；正常 greedy 把各序列末层 hidden 写入 GPU batch buffer，再批量执行 final RMSNorm、LM head 与 argmax，并一次回传整批结果；Transformer layer 仍逐序列；`PAGED_SERVING_TINY_LLM_MAX_SEQS`（默认 4）与 `PAGED_SERVING_TINY_LLM_DECODE_RESERVE`（默认 512）可按显存/生成长度调节容量 | ✅ |
 
-在 GPU 学习主线（五主仓）中，本仓库只练习 LLM Serving 控制面；真实模型权重加载与 token 计算属于 `tiny-llm`。整体顺序见 [`LEARNING_PATH.md`](https://github.com/open-infra-ai/open-infra-ai/blob/master/LEARNING_PATH.md)（meta 仓）。
+在 GPU 学习主线（五主仓）中，本仓库只练习 LLM Serving 控制面；真实模型权重加载与 token 计算属于 `tiny-llm`。整体顺序见 [`LEARNING_PATH.md`](https://github.com/holtwood-systems/portfolio/blob/master/LEARNING_PATH.md)（meta 仓）。
 
 ## 项目边界（IN / OUT）
 
@@ -57,9 +57,9 @@ Paged-Serving 是一个基于 Rust 构建的 LLM Serving 控制面，以模块�
 - 属性测试与资源不变量验证
 
 **OUT（明确不做，见对应仓库）**：
-- 计算 kernel（GEMM/attention/RoPE/W8A16）→ [tiny-llm](https://github.com/open-infra-ai/tiny-llm)
-- 模型加载、词表与 BPE 算法权威 → [tiny-llm](https://github.com/open-infra-ai/tiny-llm)（本仓不重新实现 GGUF tokenizer；HF 路径必须与 tiny-llm fixture 逐 id 对齐）
-- FlashAttention 深挖 → [cuflash](https://github.com/open-infra-ai/cuflash)
+- 计算 kernel（GEMM/attention/RoPE/W8A16）→ [tiny-llm](https://github.com/holtwood-systems/tiny-llm)
+- 模型加载、词表与 BPE 算法权威 → [tiny-llm](https://github.com/holtwood-systems/tiny-llm)（本仓不重新实现 GGUF tokenizer；HF 路径必须与 tiny-llm fixture 逐 id 对齐）
+- FlashAttention 深挖 → [cuflash](https://github.com/holtwood-systems/cuflash)
 
 ## 系统架构
 
@@ -179,7 +179,7 @@ SSE 发出 `internal_error`（`slow consumer: event channel overflow`）和 `[DO
 
 ```bash
 # 克隆仓库
-git clone https://github.com/open-infra-ai/paged-serving.git
+git clone https://github.com/holtwood-systems/paged-serving.git
 cd paged-serving
 
 # 以 release 模式构建
@@ -352,7 +352,7 @@ for result in results {
 其中 closed c1/c2/c4 与全部 Poisson 档的 TTFT p95 重复波动超过 10%，所以它是当前
 路径的可追溯边界证据，不是精确 SLO 或 P1→P2 速度提升声明。该矩阵也早于当前的批量
 末端后处理：ABI 虽可一次接收多个序列，但
-[`tinyllm_step`](https://github.com/open-infra-ai/tiny-llm/blob/master/src/ffi.cpp)
+[`tinyllm_step`](https://github.com/holtwood-systems/tiny-llm/blob/master/src/ffi.cpp)
 的 Transformer layer forward 仍逐序列推进。正常 greedy 仅在每序列末层 hidden 写入
 GPU batch buffer 后，批量执行 final RMSNorm、LM head 与 argmax，并在 step 末尾一次回传
 token id；`logprobs` 仍走主机完整 logits / top-k 路径。因此 continuous batching 在控制面
@@ -509,9 +509,9 @@ cargo test && cargo fmt --check && cargo clippy
 - **不拥有 CUDA kernel**（真实 kernel 属于 tiny-llm；本仓只通过 C ABI 调度）
 - 不发布缺少可信 token 计数、完整墙钟、硬件和 commit 绑定的吞吐数字
 
-推理加速主线位于 [tiny-llm](https://github.com/open-infra-ai/tiny-llm)；本仓库只负责
+推理加速主线位于 [tiny-llm](https://github.com/holtwood-systems/tiny-llm)；本仓库只负责
 把 Runtime 能力置于真实请求、调度和 KV 生命周期中验证。FlashAttention 的独立
-kernel 学习仍在 [cuflash](https://github.com/open-infra-ai/cuflash)。
+kernel 学习仍在 [cuflash](https://github.com/holtwood-systems/cuflash)。
 
 ## 许可证
 
@@ -525,4 +525,4 @@ MIT 许可证 - 详见 [LICENSE](LICENSE)。
 
 ---
 
-<p align="center"><b>由 open-infra-ai 用 ❤️ 构建</b></p>
+<p align="center"><b>由 Holtwood Systems 维护</b></p>

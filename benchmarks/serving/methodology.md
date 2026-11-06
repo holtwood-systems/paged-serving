@@ -5,7 +5,7 @@
 不一致的数字禁止引用。
 
 通用测量纪律（环境模板 / 复现要求 / 无实测不写数字）沿用
-[`tiny-llm/docs/performance/benchmark-methodology.md`](https://github.com/open-infra-ai/tiny-llm/blob/master/docs/performance/benchmark-methodology.md)
+[`tiny-llm/docs/performance/benchmark-methodology.md`](https://github.com/holtwood-systems/tiny-llm/blob/master/docs/performance/benchmark-methodology.md)
 §1-§3，本文不复制，只定义 serving 层增量。
 
 ## 1. 指标定义（客户端侧，loadgen 产出）

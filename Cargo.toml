@@ -7,8 +7,8 @@ default-run = "paged-serving"
 description = "Learning-oriented LLM serving control plane with paged KV scheduling and continuous batching"
 authors = ["holtwood"]
 license = "MIT"
-repository = "https://github.com/open-infra-ai/paged-serving"
-homepage = "https://github.com/open-infra-ai/paged-serving"
+repository = "https://github.com/holtwood-systems/paged-serving"
+homepage = "https://github.com/holtwood-systems/paged-serving"
 keywords = ["llm", "inference", "serving", "kv-cache", "scheduler"]
 categories = ["development-tools", "simulation"]
 

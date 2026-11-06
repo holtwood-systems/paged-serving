@@ -5,7 +5,7 @@
 ## 开发环境
 
 ```bash
-git clone https://github.com/open-infra-ai/paged-serving.git
+git clone https://github.com/holtwood-systems/paged-serving.git
 cd paged-serving
 cargo build
 ```
