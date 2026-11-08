@@ -764,11 +764,22 @@ fn logprobs_output(
     tokenizer: &dyn TokenizerTrait,
     k: usize,
 ) -> LogprobsOutput {
+    logprobs_output_at(logprobs, tokenizer, k, 0)
+}
+
+/// [`logprobs_output`] 的带起始偏移版本：流式 chunk 用 `base_offset` 续算
+/// `text_offset`，非流式传 0。
+fn logprobs_output_at(
+    logprobs: &[TokenLogprobs],
+    tokenizer: &dyn TokenizerTrait,
+    k: usize,
+    base_offset: usize,
+) -> LogprobsOutput {
     let mut tokens = Vec::with_capacity(logprobs.len());
     let mut token_logprobs = Vec::with_capacity(logprobs.len());
     let mut top_logprobs = Vec::with_capacity(logprobs.len());
     let mut text_offset = Vec::with_capacity(logprobs.len());
-    let mut offset = 0usize;
+    let mut offset = base_offset;
 
     for lp in logprobs {
         let token_text = tokenizer.try_decode(&[lp.token]).unwrap_or_default();
@@ -1555,12 +1566,20 @@ fn stream_response(
         let _inflight = inflight;
         let mut failure: Option<ApiError> = None;
         let mut terminated = false;
+        // 已发送文本的字节偏移，供每个 chunk 的 logprobs.text_offset 续算。
+        let mut emitted_offset = 0usize;
         while let Some(event) = events.recv().await {
             match event {
                 RequestEvent::Chunk(chunk, logprobs) => {
-                    let lp_out = logprobs
-                        .as_ref()
-                        .map(|lp| logprobs_output(std::slice::from_ref(lp), tokenizer.as_ref(), k));
+                    let chunk_len = chunk.len();
+                    let lp_out = logprobs.as_ref().map(|lp| {
+                        logprobs_output_at(
+                            std::slice::from_ref(lp),
+                            tokenizer.as_ref(),
+                            k,
+                            emitted_offset,
+                        )
+                    });
                     let meta = SseMeta {
                         id: &id,
                         created,
@@ -1568,6 +1587,7 @@ fn stream_response(
                     };
                     yield Ok::<Event, Infallible>(Event::default()
                         .data(kind.chunk_payload(&meta, &chunk, lp_out.as_ref()).to_string()));
+                    emitted_offset += chunk_len;
                 }
                 RequestEvent::Done(completed) => {
                     terminated = true;
@@ -1652,13 +1672,21 @@ fn stream_response_multi(
         let mut remaining = n;
         let mut finish_reasons: Vec<Option<String>> = vec![None; n];
         let mut completion_tokens: Vec<usize> = vec![0; n];
+        // 每个候选各自的已发送字节偏移；多候选流的 chunk 交错到达。
+        let mut emitted_offsets: Vec<usize> = vec![0; n];
 
         while let Some((i, event)) = merged.next().await {
             match event {
                 RequestEvent::Chunk(chunk, logprobs) => {
-                    let lp_out = logprobs
-                        .as_ref()
-                        .map(|lp| logprobs_output(std::slice::from_ref(lp), tokenizer.as_ref(), k));
+                    let chunk_len = chunk.len();
+                    let lp_out = logprobs.as_ref().map(|lp| {
+                        logprobs_output_at(
+                            std::slice::from_ref(lp),
+                            tokenizer.as_ref(),
+                            k,
+                            emitted_offsets[i],
+                        )
+                    });
                     let meta = SseMeta {
                         id: &id,
                         created,
@@ -1667,6 +1695,7 @@ fn stream_response_multi(
                     let payload =
                         kind.multi_chunk_payload(&meta, n, i, &chunk, lp_out.as_ref());
                     yield Ok::<Event, Infallible>(Event::default().data(payload.to_string()));
+                    emitted_offsets[i] += chunk_len;
                 }
                 RequestEvent::Done(completed) => {
                     remaining -= 1;
@@ -1818,7 +1847,9 @@ fn qwen2_chat_prompt(messages: &[ChatMessage]) -> String {
             ));
         }
     }
-    parts.push("<|im_start|>assistant".to_string());
+    // Qwen2 模板在 assistant 引导后带一个换行；仓库的 llama.cpp 对齐 oracle
+    // （tests/tiny_llm_text_e2e.rs）同样以 "<|im_start|>assistant\n" 结尾。
+    parts.push("<|im_start|>assistant\n".to_string());
     parts.join("\n")
 }
 
@@ -1974,7 +2005,7 @@ mod tests {
             "<|im_start|>system\nYou are helpful<|im_end|>\n\
              <|im_start|>user\nHello<|im_end|>\n\
              <|im_start|>assistant\nHi there<|im_end|>\n\
-             <|im_start|>assistant"
+             <|im_start|>assistant\n"
         );
     }
 
@@ -1986,7 +2017,7 @@ mod tests {
             prompt,
             "<|im_start|>user\nHello<|im_end|>\n\
              <|im_start|>assistant\nHi<|im_end|>\n\
-             <|im_start|>assistant"
+             <|im_start|>assistant\n"
         );
     }
 
@@ -2003,7 +2034,7 @@ mod tests {
         let prompt = build_chat_prompt(&TokenizerKind::HuggingFace, &messages);
         assert_eq!(
             prompt,
-            "<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant"
+            "<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n"
         );
     }
 

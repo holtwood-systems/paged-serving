@@ -127,7 +127,7 @@ impl Scheduler {
             }
 
             if let Some(sequence) = self.decode_sequences.get(&seq_id) {
-                output.decode_sequences.push(sequence.clone());
+                output.decode_sequences.push(sequence.to_scheduled_decode());
                 total_tokens = total_tokens.saturating_add(1);
                 num_sequences += 1;
             }
@@ -181,7 +181,9 @@ impl Scheduler {
             }
 
             if let Some(sequence) = self.prefill_sequences.get(&seq_id) {
-                output.prefill_sequences.push(sequence.clone());
+                output
+                    .prefill_sequences
+                    .push(sequence.to_scheduled_prefill());
                 total_tokens = total_tokens.saturating_add(prefill_tokens);
                 num_sequences += 1;
             }
@@ -270,7 +272,9 @@ impl Scheduler {
                 match self.try_start_prefill(seq_id, request) {
                     Ok(seq_id) => {
                         if let Some(sequence) = self.prefill_sequences.get(&seq_id) {
-                            output.prefill_sequences.push(sequence.clone());
+                            output
+                                .prefill_sequences
+                                .push(sequence.to_scheduled_prefill());
                             total_tokens = total_tokens.saturating_add(prefill_tokens);
                             num_sequences += 1;
                         }
@@ -378,8 +382,9 @@ impl Scheduler {
 
     /// 因命中 stop 序列而终止请求（PSERV-105）：
     /// 把输出 token 截断到 stop 序列之前、标记 `stop_sequence_hit` 并完成。
-    /// 仅可能命中已开始生成的 prefill/decode 请求（pending 无输出 token）。
-    /// 返回是否找到了对应请求。
+    /// 命中 prefill/decode 请求时走正常完成路径；请求若已在同一 step 因
+    /// max_tokens 到达而被移入 completed_requests，则就地截断该终态记录
+    /// （KV 已释放，不再重复完成）。返回是否找到了对应请求。
     pub fn complete_by_stop_sequence(&mut self, request_id: RequestId, keep_tokens: usize) -> bool {
         let seq_id = self
             .prefill_sequences
@@ -401,7 +406,23 @@ impl Scheduler {
                 self.complete_sequence(seq_id);
                 true
             }
-            None => false,
+            None => {
+                // max_tokens 与本步 stop 命中重叠：update_sequences 已把请求
+                // 移入 completed_requests，必须截断已排队的终态，避免 stop
+                // 文本泄漏到非流式响应或 decoder.finish() 的尾块中。
+                if let Some((_, req)) = self
+                    .completed_requests
+                    .iter_mut()
+                    .find(|(_, r)| r.id == request_id)
+                {
+                    req.output_tokens.truncate(keep_tokens);
+                    req.logprobs.truncate(keep_tokens);
+                    req.stop_sequence_hit = true;
+                    true
+                } else {
+                    false
+                }
+            }
         }
     }
 
@@ -1355,9 +1376,11 @@ mod property_tests {
                     assigned_ids.insert(seq.seq_id);
                 }
 
-                let seq_ids: Vec<SeqId> = output.prefill_sequences.iter()
-                    .chain(output.decode_sequences.iter())
+                let seq_ids: Vec<SeqId> = output
+                    .prefill_sequences
+                    .iter()
                     .map(|s| s.seq_id)
+                    .chain(output.decode_sequences.iter().map(|s| s.seq_id))
                     .collect();
                 if !seq_ids.is_empty() {
                     let exec_output = ExecutionOutput {

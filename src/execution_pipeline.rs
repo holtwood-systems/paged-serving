@@ -230,8 +230,8 @@ pub fn build_execution_batch(
     // Process prefill sequences
     for seq in &scheduler_output.prefill_sequences {
         let seq_id = seq.seq_id;
-        let input_tokens = &seq.request.input_tokens;
-        let context_len = seq.context_len();
+        let input_tokens = &seq.input_tokens;
+        let context_len = seq.context_len;
 
         // Add tokens
         batch.input_tokens.extend(input_tokens.iter().copied());
@@ -246,19 +246,19 @@ pub fn build_execution_batch(
         batch.seq_ids.push(seq_id);
         batch.context_lens.push(context_len);
 
-        batch.block_tables.push(seq.get_block_table());
+        batch.block_tables.push(seq.block_table.clone());
     }
 
     // Process decode sequences
     for seq in &scheduler_output.decode_sequences {
         let seq_id = seq.seq_id;
-        let context_len = seq.context_len();
-        let input_token = seq.decode_input_token().ok_or_else(|| {
+        let context_len = seq.context_len;
+        let input_token = seq.input_token.ok_or_else(|| {
             EngineError::InvalidStateTransition(format!(
                 "decode sequence {seq_id} has no input token for batch construction"
             ))
         })?;
-        let position = seq.decode_position().ok_or_else(|| {
+        let position = seq.position.ok_or_else(|| {
             EngineError::InvalidStateTransition(format!(
                 "decode sequence {seq_id} has zero context length"
             ))
@@ -275,7 +275,7 @@ pub fn build_execution_batch(
         batch.seq_ids.push(seq_id);
         batch.context_lens.push(context_len);
 
-        batch.block_tables.push(seq.get_block_table());
+        batch.block_tables.push(seq.block_table.clone());
     }
 
     Ok(batch)
@@ -305,7 +305,7 @@ mod tests {
 
         let scheduler_output = SchedulerOutput {
             prefill_sequences: Vec::new(),
-            decode_sequences: vec![sequence],
+            decode_sequences: vec![sequence.to_scheduled_decode()],
             total_tokens: 1,
         };
 
@@ -335,7 +335,7 @@ mod tests {
 
         let scheduler_output = SchedulerOutput {
             prefill_sequences: Vec::new(),
-            decode_sequences: vec![sequence],
+            decode_sequences: vec![sequence.to_scheduled_decode()],
             total_tokens: 1,
         };
 
@@ -362,7 +362,7 @@ mod tests {
 
         let scheduler_output = SchedulerOutput {
             prefill_sequences: Vec::new(),
-            decode_sequences: vec![sequence],
+            decode_sequences: vec![sequence.to_scheduled_decode()],
             total_tokens: 1,
         };
 

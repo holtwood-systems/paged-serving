@@ -43,7 +43,10 @@
 //! - `seq_ids` 显式给出每个序列的 id（由 `tinyllm_allocate_sequence` 分配），
 //!   支持任意 id 的序列混批；
 //! - `input_tokens` / `positions` 是扁平化数组（`seq_lens` 描述每序列切分，
-//!   与 `seq_ids` 对齐）；
+//!   与 `seq_ids` 对齐），`positions` 不得为空。后端会校验它：prefill 段必须
+//!   是 `0..len-1` 的连续绝对位置，decode 段必须等于后端内部位置计数（即
+//!   `context_len - 1`），decode 的 `seq_len` 必须为 1；不一致返回错误，
+//!   避免 RoPE 位置 / KV 槽位静默错位；
 //! - `block_tables` 是扁平化物理块索引；`num_blocks` 给出每序列块数，
 //!   对齐 paged-serving 的 [`crate::types::ExecutionBatch::block_tables`]
 //!   （策略 2 下忽略）；
@@ -69,6 +72,8 @@
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TinyLlmConfig {
+    // 6 个几何字段：0 = 由 GGUF 提取；非 0 时必须与 GGUF 一致，
+    // 否则 tinyllm_load 返回 NULL。当前桥接层统一传 0。
     pub hidden_dim: i32,
     pub num_layers: i32,
     pub num_heads: i32,

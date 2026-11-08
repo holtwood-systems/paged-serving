@@ -140,5 +140,5 @@ pub use tokenizer::{
 pub use types::{
     BlockIdx, CancellationReason, CompletedRequest, ExecutionBatch, ExecutionOutput,
     GenerationParams, MemoryStats, PhysicalBlockRef, Request, RequestId, RequestState,
-    SchedulerOutput, SeqId, Sequence, TokenId,
+    ScheduledDecode, ScheduledPrefill, SchedulerOutput, SeqId, Sequence, TokenId,
 };

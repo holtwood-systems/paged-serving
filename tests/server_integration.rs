@@ -2042,6 +2042,7 @@ async fn test_streaming_carries_logprobs() {
     let body = String::from_utf8(body.to_vec()).unwrap();
 
     let mut saw_content_logprobs = false;
+    let mut expected_offset = 0usize;
     for line in body.lines() {
         let Some(data) = line.strip_prefix("data: ") else {
             continue;
@@ -2051,17 +2052,29 @@ async fn test_streaming_carries_logprobs() {
         }
         let payload: Value = serde_json::from_str(data).unwrap();
         let choice = &payload["choices"][0];
-        if choice["finish_reason"].is_null() && !choice["text"].as_str().unwrap().is_empty() {
+        let text = choice["text"].as_str().unwrap();
+        if choice["finish_reason"].is_null() && !text.is_empty() {
             // 携带内容的 chunk 必须带 logprobs（单 token 块）
             let lp = &choice["logprobs"];
             assert_eq!(lp["tokens"].as_array().unwrap().len(), 1);
             assert_eq!(lp["token_logprobs"].as_array().unwrap().len(), 1);
+            // text_offset 必须跨 chunk 累计，而不是每个 chunk 都从 0 开始。
+            assert_eq!(
+                lp["text_offset"][0].as_u64().unwrap(),
+                expected_offset as u64,
+                "streaming text_offset must accumulate across chunks"
+            );
+            expected_offset += text.len();
             saw_content_logprobs = true;
         }
     }
     assert!(
         saw_content_logprobs,
         "at least one content chunk must carry logprobs"
+    );
+    assert!(
+        expected_offset > 0,
+        "content chunks must advance the offset"
     );
 }
 

@@ -2,7 +2,7 @@
 
 use super::memory::PhysicalBlockRef;
 use super::request::Request;
-use super::{BlockIdx, SeqId, TokenId};
+use super::{BlockIdx, RequestId, SeqId, TokenId};
 
 /// 序列
 ///
@@ -38,6 +38,29 @@ impl Sequence {
         self.logical_blocks.iter().map(|b| b.block_idx).collect()
     }
 
+    /// 生成 prefill 调度快照（只复制 prompt 与块表）。
+    pub fn to_scheduled_prefill(&self) -> ScheduledPrefill {
+        ScheduledPrefill {
+            seq_id: self.seq_id,
+            request_id: self.request.id,
+            input_tokens: self.request.input_tokens.clone(),
+            context_len: self.context_len(),
+            block_table: self.get_block_table(),
+        }
+    }
+
+    /// 生成 decode 调度快照（只带最后一个 token、位置与块表）。
+    pub fn to_scheduled_decode(&self) -> ScheduledDecode {
+        ScheduledDecode {
+            seq_id: self.seq_id,
+            request_id: self.request.id,
+            input_token: self.decode_input_token(),
+            position: self.decode_position(),
+            context_len: self.context_len(),
+            block_table: self.get_block_table(),
+        }
+    }
+
     /// 计算上下文长度（输入 + 已生成）
     ///
     /// 使用饱和算术，任何输入下都不会溢出。
@@ -61,17 +84,45 @@ impl Sequence {
     }
 }
 
+/// 调度器输出中的 prefill 序列。
+///
+/// 只携带 `build_execution_batch` 真正需要的字段，而不是克隆整个
+/// [`Sequence`]/[`Request`]（后者会复制不断增长的输出 token 与 logprobs）。
+#[derive(Debug, Clone)]
+pub struct ScheduledPrefill {
+    pub seq_id: SeqId,
+    pub request_id: RequestId,
+    /// 完整 prompt；prefill 只调度一次，这次复制是必要的。
+    pub input_tokens: Vec<TokenId>,
+    pub context_len: u32,
+    pub block_table: Vec<BlockIdx>,
+}
+
+/// 调度器输出中的 decode 序列。
+///
+/// 每步只带最后一个 token、位置与块表；`input_token` / `position` 为
+/// `None` 表示调度器状态不一致，由执行流水线报错。
+#[derive(Debug, Clone)]
+pub struct ScheduledDecode {
+    pub seq_id: SeqId,
+    pub request_id: RequestId,
+    pub input_token: Option<TokenId>,
+    pub position: Option<u32>,
+    pub context_len: u32,
+    pub block_table: Vec<BlockIdx>,
+}
+
 /// 调度器输出
 ///
-/// 包含一个调度周期内待执行的序列。序列以克隆快照形式持有：
-/// 输出仅在单线程内被执行流水线读取一次后即丢弃，无需共享所有权。
+/// 包含一个调度周期内待执行的序列快照。快照只含执行批次需要的轻量字段，
+/// 输出仅在单线程内被执行流水线读取一次后即丢弃。
 #[derive(Debug, Clone, Default)]
 pub struct SchedulerOutput {
     /// Prefill 阶段的序列
-    pub prefill_sequences: Vec<Sequence>,
+    pub prefill_sequences: Vec<ScheduledPrefill>,
 
     /// Decode 阶段的序列
-    pub decode_sequences: Vec<Sequence>,
+    pub decode_sequences: Vec<ScheduledDecode>,
 
     /// 批次总 token 数
     pub total_tokens: u32,
@@ -92,8 +143,8 @@ impl SchedulerOutput {
     pub fn seq_ids(&self) -> Vec<SeqId> {
         self.prefill_sequences
             .iter()
-            .chain(self.decode_sequences.iter())
             .map(|s| s.seq_id)
+            .chain(self.decode_sequences.iter().map(|s| s.seq_id))
             .collect()
     }
 }

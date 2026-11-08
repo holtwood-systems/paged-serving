@@ -30,6 +30,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   overflow 策略、指标语义口径与测试方式；待评审后分 PR 实现（P0-001/002/003）。
 
 ### Fixed
+- 2026-11-08 stop 边界批次：stop 序列命中与 `max_tokens` 到达发生在同一
+  step 时，`update_sequences` 已把请求移入 `completed_requests`，旧逻辑只在
+  prefill/decode 中查找并静默失败——非流式泄漏 stop 文本且
+  `finish_reason=length`，流式丢失该 token。`complete_by_stop_sequence` 现在
+  也会截断已完成的终态，引擎仅在其返回 true 时删除 decoder；新增
+  `test_stop_sequence_hit_on_max_tokens_boundary_truncates`。
+- 2026-11-08 流式 logprobs：每个 SSE chunk 的 `text_offset` 原先恒为 0；现在按
+  已发送文本的字节偏移累计，多候选流按候选分别累计。扩展
+  `test_streaming_carries_logprobs` 逐 chunk 断言偏移。
+- 2026-11-08 chat prompt：Qwen2 模板末尾改为 `<|im_start|>assistant\n`，与
+  仓库 llama.cpp greedy 对齐 oracle 一致（此前少一个换行）；
+  同步更新三个 prompt 单元测试。
 - 2026-10-04 真实测试执行批次：默认外部 tokenizer 差分明确标为 ignored，显式
   执行缺输入即失败；启用 `tiny-llm` 的五个 GPU 集成用例缺输入直接失败。
   CPU CI 验证缺 tokenizer/fixture 的失败出口，拒绝把编译失败或零测试当作通过；
@@ -53,6 +65,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   byte-fallback 边界；中间片段与最终一次性 decode 保持严格等价。
 
 ### Changed
+- 2026-11-08 tiny-llm C ABI 契约同步：tiny-llm 后端现在校验 `positions`
+  （prefill 为 `0..len-1`、decode 等于 `context_len - 1`、decode 的
+  `seq_len` 必须为 1）与 `TinyLlmConfig` 的 6 个几何字段（0 = 由 GGUF
+  提取，非 0 必须与 GGUF 一致）。本仓调用方传参本就满足该契约（几何字段
+  恒为 0，positions 与后端内部记账一致），本次只同步
+  `src/tiny_llm_ffi.rs` 的注释；无 Rust 行为变更，需配合更新后的
+  tiny-llm 静态库。
+- 2026-11-08 调度输出轻量化：`SchedulerOutput` 的 prefill/decode 元素由完整
+  `Sequence` 克隆改为 `ScheduledPrefill` / `ScheduledDecode` 快照，只携带
+  `seq_id`、`request_id`、所需 token、位置、`context_len` 与块表。decode 每步
+  不再复制 `input_tokens`/`output_tokens`/`logprobs`，长输出控制面从
+  O(T²) 拷贝降为 O(T)。这是 Rust source-breaking change（字段类型变更），
+  C ABI 不变；新类型已从 crate 根导出。
+- 2026-11-08 stop 检测增量化：每请求缓存增量解码文本、已扫描字节偏移与最长
+  stop 长度，只解码新 token，并只在回退窗口（最长 stop 长度 - 1）内重新搜索；
+  长生成从每步 O(T) tokenizer 工作降为整段 O(T)。命中截断仍复用
+  `tokens_before_char`，输出语义不变。新增计数 tokenizer 回归测试：20 步生成
+  约 2 次 `try_decode`（旧实现约 210 次）。
 - 2026-10-04 指标批次完成独立取消分类：engine failed 排除主动取消，慢消费者
   溢出按失败统计；取消保持 HTTP 错误信封但不计 `paged_errors_total`。新增 public
   enum 变体与 struct 字段是 Rust source-breaking change，穷尽匹配、struct literal

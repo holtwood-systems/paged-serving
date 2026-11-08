@@ -96,6 +96,24 @@ fn tokens_before_char(
     tokens.len()
 }
 
+/// 每请求的 stop 扫描状态。
+///
+/// 每步都 `try_decode` 整个输出前缀会让整段生成为 O(T²)；这里用增量
+/// 解码器只处理新 token，并把 stop 搜索限制在「上次已扫描文本的回退窗口」
+/// 内（窗口长度 = 最长 stop 序列 - 1），总工作量为 O(T)。
+struct StopScanState {
+    /// 与输出流相同的增量解码器；拼接结果等于最终一次 decode。
+    decoder: Box<dyn IncrementalDecoder>,
+    /// 已增量解码出的输出文本。
+    text: String,
+    /// 已喂给 decoder 的 token 数。
+    seen: usize,
+    /// `text` 中已搜索过的字节数。
+    scanned: usize,
+    /// 最长 stop 序列的字节长度（跨扫描边界命中的回退窗口）。
+    max_stop_len: usize,
+}
+
 /// 推理引擎
 ///
 /// 主编排器，协调所有组件实现端到端推理。
@@ -124,6 +142,8 @@ pub struct InferenceEngine {
     /// 每请求增量解码器：生命周期与请求一致（完成/取消/失败时销毁），
     /// 保证流式片段拼接 == 最终一次性 decode 文本。
     decoders: HashMap<RequestId, Box<dyn IncrementalDecoder>>,
+    /// 每请求 stop 扫描状态：只解码新 token，避免每步全量 decode 的 O(T²)。
+    stop_scans: HashMap<RequestId, StopScanState>,
     eos_token_id: u32,
     total_requests: u64,
     completed_requests_count: u64,
@@ -170,6 +190,7 @@ impl InferenceEngine {
             scheduler,
             execution_pipeline,
             decoders: HashMap::new(),
+            stop_scans: HashMap::new(),
             eos_token_id,
             total_requests: 0,
             completed_requests_count: 0,
@@ -205,6 +226,7 @@ impl InferenceEngine {
             scheduler,
             execution_pipeline,
             decoders: HashMap::new(),
+            stop_scans: HashMap::new(),
             eos_token_id,
             total_requests: 0,
             completed_requests_count: 0,
@@ -335,8 +357,13 @@ impl InferenceEngine {
             let request_id_by_seq: HashMap<SeqId, RequestId> = scheduler_output
                 .prefill_sequences
                 .iter()
-                .chain(scheduler_output.decode_sequences.iter())
-                .map(|seq| (seq.seq_id, seq.request.id))
+                .map(|seq| (seq.seq_id, seq.request_id))
+                .chain(
+                    scheduler_output
+                        .decode_sequences
+                        .iter()
+                        .map(|seq| (seq.seq_id, seq.request_id)),
+                )
                 .collect();
             let seq_ids = scheduler_output.seq_ids();
 
@@ -416,22 +443,76 @@ impl InferenceEngine {
         let mut to_stop: Vec<(RequestId, usize)> = Vec::new();
         for &(request_id, _) in generated {
             let Some(req) = self.scheduler.get_request_by_id(request_id) else {
+                self.stop_scans.remove(&request_id);
                 continue;
             };
             if req.params.stop.is_empty() {
                 continue;
             }
-            let Ok(text) = self.tokenizer.try_decode(&req.output_tokens) else {
+
+            if !self.stop_scans.contains_key(&request_id) {
+                let max_stop_len = req.params.stop.iter().map(|s| s.len()).max().unwrap_or(0);
+                self.stop_scans.insert(
+                    request_id,
+                    StopScanState {
+                        decoder: self.tokenizer.create_decoder(),
+                        text: String::new(),
+                        seen: 0,
+                        scanned: 0,
+                        max_stop_len,
+                    },
+                );
+            }
+            let state = self
+                .stop_scans
+                .get_mut(&request_id)
+                .expect("stop scan state inserted above");
+
+            // 只解码本步新增的 token。首次出现时可能已有多个 token。
+            let mut decode_failed = false;
+            while state.seen < req.output_tokens.len() {
+                let token = req.output_tokens[state.seen];
+                match state.decoder.push(token) {
+                    Ok(Some(piece)) => state.text.push_str(&piece),
+                    Ok(None) => {}
+                    Err(_) => {
+                        decode_failed = true;
+                        break;
+                    }
+                }
+                state.seen += 1;
+            }
+            if decode_failed {
+                // 与旧行为一致：tokenizer 失败时本步跳过 stop 检测；
+                // 丢弃半成品，下一步从头重建（请求通常也会因解码失败而终止）。
+                self.stop_scans.remove(&request_id);
                 continue;
-            };
-            if let Some(start) = find_stop_sequence(&text, &req.params.stop) {
+            }
+
+            // 只扫描新文本：回退最长 stop 长度 - 1 字节，覆盖跨边界命中。
+            let mut from = state
+                .scanned
+                .saturating_sub(state.max_stop_len.saturating_sub(1));
+            from = from.min(state.text.len());
+            while from > 0 && !state.text.is_char_boundary(from) {
+                from -= 1;
+            }
+            if let Some(offset) = find_stop_sequence(&state.text[from..], &req.params.stop) {
+                let start = from + offset;
+                // 命中时才做一次 O(T) 的 token 边界换算，正常路径不付这个成本。
                 let keep = tokens_before_char(&req.output_tokens, &*self.tokenizer, start);
                 to_stop.push((request_id, keep));
+            } else {
+                state.scanned = state.text.len();
             }
         }
         for (request_id, keep) in to_stop {
-            self.scheduler.complete_by_stop_sequence(request_id, keep);
-            self.decoders.remove(&request_id);
+            // 只有真正找到并截断了请求才销毁解码器；否则保持现有生命周期，
+            // 由 collect_completed_requests 统一回收。
+            if self.scheduler.complete_by_stop_sequence(request_id, keep) {
+                self.decoders.remove(&request_id);
+            }
+            self.stop_scans.remove(&request_id);
         }
     }
 
@@ -459,6 +540,7 @@ impl InferenceEngine {
             .into_iter()
             .map(|(_, req)| {
                 let decoder = self.decoders.remove(&req.id);
+                self.stop_scans.remove(&req.id);
                 let input_text = self.tokenizer.try_decode(&req.input_tokens).ok();
                 let decoded_output = self.tokenizer.try_decode(&req.output_tokens);
                 let tokenization_error = decoded_output.as_ref().err().cloned();
@@ -732,6 +814,7 @@ mod tests {
     use crate::tokenizer::SimpleTokenizer;
     use crate::types::{ExecutionBatch, ExecutionOutput, SeqId};
     use std::fs;
+    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex};
 
     /// 记录 `sequences_finished` 收到的 seq id；可配置 execute 失败与否。
@@ -1797,6 +1880,110 @@ mod tests {
         // "AAB" 中 "AB" 起始于字符偏移 1 → 保留第 1 个 A，移除 AB
         assert_eq!(result.output_tokens, vec![37]);
         assert_eq!(result.output_text, "A");
+        assert_eq!(result.finish_reason, Some(FinishReason::Stop));
+        assert!(!engine.has_pending_work());
+    }
+
+    /// 统计 `try_decode` 调用次数的 tokenizer，用于验证 stop 扫描不再每步
+    /// 重新 decode 整个输出前缀。
+    struct CountingDecodeTokenizer {
+        inner: SimpleTokenizer,
+        decode_calls: Arc<AtomicUsize>,
+    }
+
+    impl TokenizerTrait for CountingDecodeTokenizer {
+        fn try_encode(&self, text: &str) -> Result<Vec<TokenId>, String> {
+            self.inner.try_encode(text)
+        }
+        fn try_decode(&self, tokens: &[TokenId]) -> Result<String, String> {
+            self.decode_calls.fetch_add(1, Ordering::Relaxed);
+            self.inner.try_decode(tokens)
+        }
+        fn vocab_size(&self) -> u32 {
+            self.inner.vocab_size()
+        }
+        fn bos_token_id(&self) -> TokenId {
+            self.inner.bos_token_id()
+        }
+        fn eos_token_id(&self) -> TokenId {
+            self.inner.eos_token_id()
+        }
+        fn pad_token_id(&self) -> TokenId {
+            self.inner.pad_token_id()
+        }
+        fn create_decoder(&self) -> Box<dyn IncrementalDecoder> {
+            self.inner.create_decoder()
+        }
+    }
+
+    #[test]
+    fn test_stop_scan_decodes_incrementally_not_quadratically() {
+        let config = create_test_config();
+        let scheduler = Scheduler::new(config.clone());
+        let decode_calls = Arc::new(AtomicUsize::new(0));
+        let mut engine = InferenceEngine::with_components(
+            config.clone(),
+            Box::new(CountingDecodeTokenizer {
+                inner: SimpleTokenizer::new(),
+                decode_calls: decode_calls.clone(),
+            }),
+            scheduler,
+            Box::new(ConstantTokenExecutor { token: 37 }), // 'A'
+        )
+        .unwrap();
+        engine
+            .submit_request(
+                "hi",
+                GenerationParams {
+                    max_tokens: 20,
+                    stop: vec!["ZZZ".to_string()],
+                    ..GenerationParams::default()
+                },
+            )
+            .unwrap();
+
+        let completed = engine.run();
+        assert_eq!(completed.len(), 1);
+        assert_eq!(completed[0].output_tokens.len(), 20);
+
+        // 旧实现每步 try_decode 整个前缀：约 20*21/2 = 210 次。
+        // 增量实现只在请求结束时 decode 输入/输出各一次。
+        let calls = decode_calls.load(Ordering::Relaxed);
+        assert!(calls <= 4, "stop 扫描不应每步全量 decode，实际 {calls} 次");
+    }
+
+    #[test]
+    fn test_stop_sequence_hit_on_max_tokens_boundary_truncates() {
+        // 回归：stop 命中与 max_tokens 到达发生在同一 step。update_sequences
+        // 先把请求移入 completed_requests，旧实现只在 prefill/decode 中查找，
+        // 于是 stop 文本泄漏、finish_reason 变成 Length。
+        let config = create_test_config();
+        let scheduler = Scheduler::new(config.clone());
+        let mut engine = InferenceEngine::with_components(
+            config.clone(),
+            Box::new(SimpleTokenizer::new()),
+            scheduler,
+            // 第 2 步输出 'B'，文本 "AB" 命中 stop，同时 max_tokens=2 到达。
+            Box::new(SequenceExecutor::new(vec![37, 38])),
+        )
+        .unwrap();
+        engine
+            .submit_request(
+                "hi",
+                GenerationParams {
+                    max_tokens: 2,
+                    stop: vec!["AB".to_string()],
+                    logprobs: None,
+                    ..GenerationParams::default()
+                },
+            )
+            .unwrap();
+        let completed = engine.run();
+        assert_eq!(completed.len(), 1);
+        let result = &completed[0];
+        assert!(result.success);
+        assert!(result.output_tokens.is_empty(), "stop 文本必须被截断");
+        assert_eq!(result.output_text, "");
         assert_eq!(result.finish_reason, Some(FinishReason::Stop));
         assert!(!engine.has_pending_work());
     }
