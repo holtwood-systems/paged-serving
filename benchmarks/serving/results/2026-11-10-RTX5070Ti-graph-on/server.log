@@ -1,0 +1,23 @@
+Paged-Serving
+===========
+Configuration:
+  Block size: 16
+  Max blocks: 1024
+  Max batch size: 32
+  Max sequences: 256
+
+[2026-11-10 18:40:51.907] [info] [206026] Parsing GGUF file: /home/shane/models/qwen2.5-0.5b-instruct-q4_k_m.gguf
+[2026-11-10 18:40:51.908] [info] [206026] GGUF header: version=3, tensors=291, metadata_entries=26
+[2026-11-10 18:40:51.934] [info] [206026] GGUF parsing complete. Data offset: 5947744
+[2026-11-10 18:40:51.934] [info] [206026] Extracted model config: hidden_dim=896, num_layers=24, num_heads=14, num_kv_heads=2, vocab_size=151936
+[2026-11-10 18:40:51.934] [info] [206026] Loading GGUF model from: /home/shane/models/qwen2.5-0.5b-instruct-q4_k_m.gguf
+[2026-11-10 18:40:51.934] [info] [206026] Parsing GGUF file: /home/shane/models/qwen2.5-0.5b-instruct-q4_k_m.gguf
+[2026-11-10 18:40:51.934] [info] [206026] GGUF header: version=3, tensors=291, metadata_entries=26
+[2026-11-10 18:40:51.958] [info] [206026] GGUF parsing complete. Data offset: 5947744
+[2026-11-10 18:40:51.958] [info] [206026] Extracted model config: hidden_dim=896, num_layers=24, num_heads=14, num_kv_heads=2, vocab_size=151936
+[2026-11-10 18:40:51.958] [info] [206026] Model config: hidden_dim=896, num_layers=24, vocab_size=151936
+Engine ready: backend=TinyLlm, model_path=Some("/home/shane/models/qwen2.5-0.5b-instruct-q4_k_m.gguf"), tokenizer=HuggingFace
+
+Server mode: 127.0.0.1:3000
+Model name: paged-serving
+Backend: TinyLlm

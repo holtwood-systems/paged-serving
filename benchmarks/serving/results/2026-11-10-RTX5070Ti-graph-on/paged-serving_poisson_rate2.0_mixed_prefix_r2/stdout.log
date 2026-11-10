@@ -1,0 +1,15 @@
+数据集: 200 条 | 模式: poisson | 并发/速率: 2 req/s | 测量请求数: 64 | warmup: 30s
+Poisson arrival seed: 20260905
+warmup 完成（30s），开始测量窗口
+逐请求记录已写入: results/2026-11-10-RTX5070Ti-graph-on/paged-serving_poisson_rate2.0_mixed_prefix_r2/per_request.jsonl（64 条）
+权威汇总已写入: results/2026-11-10-RTX5070Ti-graph-on/paged-serving_poisson_rate2.0_mixed_prefix_r2/summary.json
+=== loadgen 汇总 ===
+引擎: paged-serving | 模式: poisson | 目标: http://127.0.0.1:3000
+请求: 64（成功 54，成功率 84.38%）| 测量窗口: 31.079s
+失败归类: http_429=10
+TTFT ms p50/p95/p99: 126.38 / 221.36 / 253.11（n=54）
+chunk 间隔 ms p50/p95/p99: 10.93 / 21.26 / 130.98（n=6858）（不是 ITL）
+ITL ms: -（协议未提供 token 级时间戳）
+TPOT ms p50/p95/p99: 15.77 / 24.91 / 25.75（n=54）
+token 计数覆盖: 54/54（100.00%）
+吞吐: 222.4 tok/s | 1.74 req/s
