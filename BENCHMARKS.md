@@ -10,7 +10,7 @@
 
 | 日期 | 环境 | 模型 | 关键结果 | 结果包 |
 |---|---|---|---|---|
-| 2026-11-05 | RTX 4090 独占 | 0.5B Q4_K_M→W8A16 | closed c1–c8 全收敛：吞吐 284.8→302.3 tok/s、TPOT 2.63→20.38 ms、TTFT p95 124.5→876.6 ms；768/768 成功 | [`results/2026-11-05-RTX4090-exclusive-gpu/`](benchmarks/serving/results/2026-11-05-RTX4090-exclusive-gpu/report.md) |
+| 2026-11-05 | RTX 4090 独占 | 0.5B Q4_K_M→W8A16 | closed c1–c8 全过 10% 收敛门：吞吐 284.8→302.3 tok/s、TPOT 2.63→20.38 ms、TTFT p95 124.5→876.6 ms；768/768 成功 | [`results/2026-11-05-RTX4090-exclusive-gpu/`](benchmarks/serving/results/2026-11-05-RTX4090-exclusive-gpu/report.md) |
 | 2026-11-05 | RTX 4090（共享，外部租户占卡） | 同上、同二进制同种子 | c1/c4/c8 未收敛；c8 TPOT 63.2 ms（干扰放大约 3×）、吞吐均值 188.9 tok/s | [`results/2026-11-05-NVIDIA-GeForce-RTX-4090/`](benchmarks/serving/results/2026-11-05-NVIDIA-GeForce-RTX-4090/) |
 | 2026-11-06 | RTX 4090（0.5B） | 0.5B Q4_K_M→W8A16 | 故障注入 5/5：flood 64 并发 → 200×8+429×56 零 5xx；SSE RST / 慢消费者 / 泊松混合流量资源回零 | [`tests/evidence/2026-11-06-fault-injection/`](tests/evidence/2026-11-06-fault-injection/README.md) |
 | 2026-09-07 | RTX 3060 Laptop 6GB | 0.5B Q4_K_M→W8A16 | 批量末端后处理后 21-run：closed 64/64 成功；Poisson 0.64 / 1.28 req/s 分别 9 / 74 个 429；c1/c4 过收敛门，c2/c8 与 Poisson 未收敛（保留） | [`results/2026-09-07-RTX3060Laptop-paged-serving-p2-batch-postprocess-streaming/`](benchmarks/serving/results/2026-09-07-RTX3060Laptop-paged-serving-p2-batch-postprocess-streaming/) |

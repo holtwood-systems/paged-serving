@@ -6,14 +6,22 @@
 - 与 `2026-11-05-NVIDIA-GeForce-RTX-4090` 包的关系：**同一二进制、同一参数、
   同一随机种子的复测**。首包采集时同机另一进程占用了约 42.7 GiB 显存执行
   未知计算，c1/c4/c8 未收敛；本包在 GPU 完全空闲后重测，**4 档并发全部
-  收敛**（各指标 `(max-min)/mean` 均 <4%），首包的 non_converged 归因于
-  共享环境干扰得到证实。两包均保留，互为对照：共享环境干扰上限见首包。
+  通过 10% 收敛门**（`ttft_p95`/`output_tok/s`/`req/s` 三指标
+  `(max-min)/mean`，最大相对极差 6.75%，c2 TTFT p95；逐 run 数值见
+  `audit.json`）。未纳入收敛门的指标里 tpot_p95 相对极差最高 12.36%
+  （c2），如实保留、不作收敛声明。首包的 non_converged 归因于共享环境
+  干扰得到证实。两包均保留，互为对照：共享环境干扰上限见首包。
 - 硬件与软件：RTX 4090（49140 MiB）、driver 550.107.02、CUDA toolkit 12.8、
   sm_89。CPU Xeon Gold 6530。**并发 CPU 负载声明**：sweep 期间同机另有
   ~3-10 核的 nvcc 编译任务（sgl-kernel 源码构建），对本包 TTFT 口径可能有
   轻微影响；GPU 侧无竞争。
-- 被测代码：paged-serving `d7e25189f9732a2859d67de2d7fd005dd2b2d6ea`，
-  tiny-llm `01f91f93fe5b1921f55b863c8e98e28e9bd4b947`，启动时 clean。
+- 被测代码：sweep 时 worktree HEAD 为 paged-serving
+  `186351e7f346363591c2b5ff708542e38aa34ac0`（各 run `run_metadata.json`
+  与本包 `metadata.json` 一致），tiny-llm
+  `01f91f93fe5b1921f55b863c8e98e28e9bd4b947`，启动时 clean。
+  `186351e` 相对共享包被测提交 `d7e25189f9732a2859d67de2d7fd005dd2b2d6ea`
+  仅新增该共享包的结果文件（`src/`、`tests/`、`Cargo.*`、`build.rs` 零 diff，
+  `git diff --stat` 可复核），故与共享包「同一二进制」成立。
 - 模型：`qwen2.5-0.5b-instruct-q4_k_m.gguf`，SHA-256
   `74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db`；
   tokenizer 为 HF 完整词表 `Qwen2.5-0.5B-Instruct/tokenizer.json`。

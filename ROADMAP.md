@@ -97,10 +97,11 @@
 - [x] 2026-11-06：客户端侧故障注入 5/5 断言全绿（SSE 中途 RST、慢消费者、flood
       准入、非流式断连、泊松混合流量）；E3 抓出调度器容量未与后端联动的准入缺陷
       并同批修复（[`tests/evidence/2026-11-06-fault-injection/`](tests/evidence/2026-11-06-fault-injection/README.md)）
-- [x] 2026-11-06：Qwen2.5-7B 真实 serving 实测——KV 分页公式逐 block 精确验证
-      （78 tok → 5 blocks）、c1/c4/c8 TTFT/TPOT/吞吐；单流 TPOT 低于权重读取带宽
-      理论下限的异常如实记录、未定性，待 per-step kernel 计时定位
-      ([`tests/evidence/2026-11-06-7b-serving/`](tests/evidence/2026-11-06-7b-serving/README.md))
+- [x] 2026-11-06：Qwen2.5-7B serving canary 采集并完成审计——整包标记
+      **invalid / unverified**（c1 TPOT 与 tiny-llm 同模型 bench 矛盾、低于
+      权重读取带宽理论下限、缺 provenance 与模型身份证据）；包内
+      78 tok→5 blocks 与 TTFT/TPOT/吞吐观测均不作数。审计目录与重跑条件保留
+      ([AUDIT.md](tests/evidence/2026-11-06-7b-serving/AUDIT.md))
 - [ ] paged-serving / llama-server / vLLM 三后端结果绑定 commit、模型与量化口径
 - [ ] 7B 单流 TPOT 异常定位（per-step kernel 计时 / FFI step 探针），再决定是否重采矩阵
 - [ ] `/readyz` 在权重后台加载期间即返回 200 的预热期竞态（7B 包记录：加载完成才
