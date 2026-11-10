@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "status": "valid",
+  "engine": {
+    "name": "paged-serving",
+    "commit": "3ab35ad9a6c635abcf4cb575add0b19f5f052ef0"
+  },
+  "backend": {
+    "name": "tiny-llm",
+    "commit": "136c0d0902fec5faab84b29389c1729b6058247c"
+  },
+  "model": {
+    "path": "/home/shane/models/qwen2.5-0.5b-instruct-q4_k_m.gguf",
+    "sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+    "bytes": 491400032,
+    "architecture": "qwen2",
+    "num_layers": 24,
+    "hidden_dim": 896,
+    "num_kv_heads": 2,
+    "head_dim": 64
+  },
+  "tokenizer": {
+    "kind": "huggingface",
+    "path": "/home/shane/models/qwen2.5-0.5b-tokenizer.json",
+    "sha256": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539"
+  },
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 5070 Ti",
+    "driver": "616.56",
+    "cuda": "13.3.73"
+  },
+  "command": [
+    "./target/release/paged-serving", "--serve",
+    "--backend", "tiny-llm",
+    "--model-path", "/home/shane/models/qwen2.5-0.5b-instruct-q4_k_m.gguf",
+    "--port", "3111",
+    "--tokenizer", "/home/shane/models/qwen2.5-0.5b-tokenizer.json"
+  ],
+  "server_log": "server.log",
+  "load": {
+    "ready_after_s": 8.0,
+    "observed_gpu_mem_mib": 4582
+  },
+  "environment": {},
+  "notes": "DEV-14 默认启用验证：无 env 的默认行为抽查（c8 单 run）。批量 graph 分桶 {2,4,8}。"
+}
