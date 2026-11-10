@@ -5,6 +5,9 @@
   short.jsonl  —— 32-64 token 级 prompt（轻量请求）
   work.jsonl   —— 128-256 token 级 prompt（典型工作负载）
   long.jsonl   —— 512-1024 token 级 prompt（长 prefill 压力）
+  mixed_prefix.jsonl —— 长短混合 + 共享前缀的有界负载：
+    每 8 条共享一个 96-160 token 级公共前缀，后缀为 32-256
+    token 级随机文本，覆盖前缀复用与长度混合两个变量。
 
 口径说明（写入每条的 prompt_tokens 为**近似值**）：
   英文自然文本在 Qwen2.5 BPE 词表下约 1.2-1.5 token/word，
@@ -72,6 +75,27 @@ def main() -> None:
                     json.dumps({"prompt": prompt, "prompt_tokens": approx}) + "\n"
                 )
         print(f"written {path} ({args.n} entries, {lo}-{hi} token tier)")
+
+    # mixed_prefix：每 8 条共享公共前缀，后缀长度横跨 short~work 两档
+    path = outdir / "mixed_prefix.jsonl"
+    group = 8
+    with open(path, "w") as f:
+        for i in range(args.n):
+            if i % group == 0:
+                prefix, prefix_toks = gen_prompt(rng, rng.randint(96, 160))
+            suffix, suffix_toks = gen_prompt(rng, rng.randint(32, 256))
+            f.write(
+                json.dumps(
+                    {
+                        "prompt": prefix + " " + suffix,
+                        "prompt_tokens": prefix_toks + suffix_toks,
+                    }
+                )
+                + "\n"
+            )
+    print(
+        f"written {path} ({args.n} entries, shared prefix 96-160 + suffix 32-256 token tier)"
+    )
 
 
 if __name__ == "__main__":
