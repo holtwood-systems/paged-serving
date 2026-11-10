@@ -1,0 +1,649 @@
+{
+  "schema_version": 1,
+  "root": "results/2026-11-10-RTX5070Ti-graph-on",
+  "formal": false,
+  "errors": [],
+  "warnings": [],
+  "groups": [
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c1",
+        "mixed_prefix"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 125.90659400000001,
+          "min": 125.227581,
+          "max": 126.65906499999998,
+          "relative_range_pct": 1.1369412470962268
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 261.98919988006253,
+          "min": 260.33921573177935,
+          "max": 265.2643893103585,
+          "relative_range_pct": 1.8799147372616498
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.0467906240629885,
+          "min": 2.033900122904526,
+          "max": 2.072378041487176,
+          "relative_range_pct": 1.8799147372616498
+        }
+      },
+      "provenance": {
+        "engine_commit": "09bf4fd324b0f27abc367c0da3a8067183a63261",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c1",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 108.101586,
+          "min": 107.948425,
+          "max": 108.26452,
+          "relative_range_pct": 0.29240551567856204
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 282.504482947041,
+          "min": 281.2556234891644,
+          "max": 284.13260169238345,
+          "relative_range_pct": 1.0183832034121612
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.207066273023758,
+          "min": 2.197309558509097,
+          "max": 2.2197859507217457,
+          "relative_range_pct": 1.0183832034121612
+        }
+      },
+      "provenance": {
+        "engine_commit": "09bf4fd324b0f27abc367c0da3a8067183a63261",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c2",
+        "mixed_prefix"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 269.19148033333335,
+          "min": 267.954586,
+          "max": 270.38493200000005,
+          "relative_range_pct": 0.9028316932581237
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 273.21695766895107,
+          "min": 272.74318480354236,
+          "max": 273.845670736064,
+          "relative_range_pct": 0.4035203165747424
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.13450748178868,
+          "min": 2.1308061312776747,
+          "max": 2.1394193026255,
+          "relative_range_pct": 0.4035203165747424
+        }
+      },
+      "provenance": {
+        "engine_commit": "09bf4fd324b0f27abc367c0da3a8067183a63261",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c2",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 206.67342533333334,
+          "min": 205.659785,
+          "max": 208.54618399999998,
+          "relative_range_pct": 1.3965990041267535
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 297.2907073995905,
+          "min": 296.01931978329384,
+          "max": 299.2550298346048,
+          "relative_range_pct": 1.0883993245580346
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.3225836515593006,
+          "min": 2.312650935806983,
+          "max": 2.33792992058285,
+          "relative_range_pct": 1.0883993245580346
+        }
+      },
+      "provenance": {
+        "engine_commit": "09bf4fd324b0f27abc367c0da3a8067183a63261",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c4",
+        "mixed_prefix"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 495.7439766666667,
+          "min": 494.20527400000003,
+          "max": 498.420065,
+          "relative_range_pct": 0.85019510037012
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 280.66571388624556,
+          "min": 280.01497511609904,
+          "max": 281.4939053103916,
+          "relative_range_pct": 0.5269365373541753
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.1927008897362934,
+          "min": 2.1876169930945237,
+          "max": 2.1991711352374343,
+          "relative_range_pct": 0.5269365373541753
+        }
+      },
+      "provenance": {
+        "engine_commit": "09bf4fd324b0f27abc367c0da3a8067183a63261",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c4",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 405.192289,
+          "min": 403.238507,
+          "max": 407.929949,
+          "relative_range_pct": 1.1578310168681405
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 305.35387787357865,
+          "min": 305.0492838162877,
+          "max": 305.88750830629976,
+          "relative_range_pct": 0.2745092008817078
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.3855771708873332,
+          "min": 2.3831975298147476,
+          "max": 2.389746158642967,
+          "relative_range_pct": 0.2745092008817078
+        }
+      },
+      "provenance": {
+        "engine_commit": "09bf4fd324b0f27abc367c0da3a8067183a63261",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c8",
+        "mixed_prefix"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 943.607092,
+          "min": 935.699695,
+          "max": 951.569867,
+          "relative_range_pct": 1.6818623063083151
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 284.90074668302265,
+          "min": 284.4314594668694,
+          "max": 285.17777030761323,
+          "relative_range_pct": 0.2619546805098999
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.2257870834611144,
+          "min": 2.222120777084917,
+          "max": 2.2279513305282284,
+          "relative_range_pct": 0.2619546805098999
+        }
+      },
+      "provenance": {
+        "engine_commit": "09bf4fd324b0f27abc367c0da3a8067183a63261",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c8",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 811.8358499999999,
+          "min": 777.533137,
+          "max": 878.518276,
+          "relative_range_pct": 12.43910810294963
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 310.2248012546093,
+          "min": 309.29184880135404,
+          "max": 311.12114336024234,
+          "relative_range_pct": 0.5896674126279668
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.423631259801635,
+          "min": 2.4163425687605784,
+          "max": 2.4306339325018933,
+          "relative_range_pct": 0.5896674126279668
+        }
+      },
+      "provenance": {
+        "engine_commit": "09bf4fd324b0f27abc367c0da3a8067183a63261",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "poisson",
+        "rate0.5",
+        "mixed_prefix"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 188.58836,
+          "min": 168.35408099999998,
+          "max": 225.349522,
+          "relative_range_pct": 30.222141493780434
+        },
+        "output_tokens_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 64.83601584332226,
+          "min": 56.729125596476784,
+          "max": 70.41516594560568,
+          "relative_range_pct": 21.108700420768496
+        },
+        "successful_requests_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 0.5065313737759551,
+          "min": 0.4431962937224749,
+          "max": 0.5501184839500444,
+          "relative_range_pct": 21.108700420768496
+        }
+      },
+      "provenance": {
+        "engine_commit": "09bf4fd324b0f27abc367c0da3a8067183a63261",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": "absolute_deadline_seed_reset"
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "poisson",
+        "rate0.5",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 163.51861033333333,
+          "min": 131.64195800000002,
+          "max": 180.239489,
+          "relative_range_pct": 29.719877695226078
+        },
+        "output_tokens_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 64.89131269668269,
+          "min": 56.74363790023104,
+          "max": 70.52859204923102,
+          "relative_range_pct": 21.243142689120976
+        },
+        "successful_requests_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 0.5069633804428335,
+          "min": 0.443309671095555,
+          "max": 0.5510046253846174,
+          "relative_range_pct": 21.243142689120976
+        }
+      },
+      "provenance": {
+        "engine_commit": "09bf4fd324b0f27abc367c0da3a8067183a63261",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": "absolute_deadline_seed_reset"
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "poisson",
+        "rate1.0",
+        "mixed_prefix"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 221.68721233333332,
+          "min": 207.21906900000002,
+          "max": 235.89554099999998,
+          "relative_range_pct": 12.935555325077319
+        },
+        "output_tokens_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 128.49120796085217,
+          "min": 113.0381070510178,
+          "max": 138.59589725514294,
+          "relative_range_pct": 19.890691829990356
+        },
+        "successful_requests_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 1.0038375621941575,
+          "min": 0.8831102113360766,
+          "max": 1.0827804473058043,
+          "relative_range_pct": 19.890691829990356
+        }
+      },
+      "provenance": {
+        "engine_commit": "09bf4fd324b0f27abc367c0da3a8067183a63261",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": "absolute_deadline_seed_reset"
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "poisson",
+        "rate1.0",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 192.00386733333332,
+          "min": 184.789736,
+          "max": 201.81395899999998,
+          "relative_range_pct": 8.866604218155997
+        },
+        "output_tokens_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 128.7405725445396,
+          "min": 113.12745220148842,
+          "max": 139.03188729258392,
+          "relative_range_pct": 20.121422935363668
+        },
+        "successful_requests_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 1.0057857230042155,
+          "min": 0.8838082203241283,
+          "max": 1.0861866194733119,
+          "relative_range_pct": 20.121422935363668
+        }
+      },
+      "provenance": {
+        "engine_commit": "09bf4fd324b0f27abc367c0da3a8067183a63261",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": "absolute_deadline_seed_reset"
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "poisson",
+        "rate2.0",
+        "mixed_prefix"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 288.7735253333334,
+          "min": 221.355956,
+          "max": 384.24759800000004,
+          "relative_range_pct": 56.40809413258124
+        },
+        "output_tokens_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 222.65538079266048,
+          "min": 210.5316736762899,
+          "max": 235.0351908349783,
+          "relative_range_pct": 11.005131370036992
+        },
+        "successful_requests_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 1.73949516244266,
+          "min": 1.6447787005960148,
+          "max": 1.836212428398268,
+          "relative_range_pct": 11.005131370036992
+        }
+      },
+      "provenance": {
+        "engine_commit": "09bf4fd324b0f27abc367c0da3a8067183a63261",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": "absolute_deadline_seed_reset"
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "poisson",
+        "rate2.0",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 232.25628533333332,
+          "min": 195.14720799999998,
+          "max": 281.411605,
+          "relative_range_pct": 37.14189989570947
+        },
+        "output_tokens_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 234.6938525475146,
+          "min": 214.4827962448815,
+          "max": 249.73107943646698,
+          "relative_range_pct": 15.018835307775833
+        },
+        "successful_requests_per_second": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 1.8335457230274579,
+          "min": 1.6756468456631368,
+          "max": 1.9510240580973983,
+          "relative_range_pct": 15.018835307775833
+        }
+      },
+      "provenance": {
+        "engine_commit": "09bf4fd324b0f27abc367c0da3a8067183a63261",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "Q4_K_M",
+        "arrival_schedule": "absolute_deadline_seed_reset"
+      }
+    }
+  ],
+  "convergence_rule": {
+    "statistic": "(max-min)/mean",
+    "threshold_pct": 10,
+    "minimum_repeats": 3
+  },
+  "runs": {
+    "discovered": 42,
+    "validated": 42
+  },
+  "status": "passed"
+}
