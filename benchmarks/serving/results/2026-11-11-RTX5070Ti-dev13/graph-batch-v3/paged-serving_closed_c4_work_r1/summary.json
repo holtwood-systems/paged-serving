@@ -16,7 +16,7 @@
     "timeout_secs": 120,
     "tokenizer": "/home/shane/models/qwen2.5-0.5b-tokenizer.json"
   },
-  "measurement_wall_secs": 20.019735639,
+  "measurement_wall_secs": 19.949270517,
   "requests": {
     "total": 64,
     "success": 64,
@@ -25,22 +25,22 @@
   },
   "ttft_ms": {
     "samples": 64,
-    "p50": 386.037463,
-    "p95": 399.763111,
-    "p99": 399.788142
+    "p50": 382.08598900000004,
+    "p95": 407.04501999999997,
+    "p99": 407.09939899999995
   },
   "inter_chunk_latency_ms": {
     "samples": 8128,
-    "p50": 6.708216,
-    "p95": 7.188514,
-    "p99": 7.417846
+    "p50": 6.686439,
+    "p95": 7.135060999999999,
+    "p99": 7.382955
   },
   "itl_ms": null,
   "tpot_ms": {
     "samples": 64,
-    "p50": 6.863672078740156,
-    "p95": 7.038427362204724,
-    "p99": 7.038586015748032
+    "p50": 6.828355102362203,
+    "p95": 7.027805543307085,
+    "p99": 7.028514858267718
   },
   "completion_tokens": {
     "known_requests": 64,
@@ -52,8 +52,8 @@
     }
   },
   "throughput": {
-    "output_tokens_per_second": 409.196212563434,
-    "successful_requests_per_second": 3.1968454106518283
+    "output_tokens_per_second": 410.6415817570419,
+    "successful_requests_per_second": 3.2081373574768897
   },
   "errors": {}
 }

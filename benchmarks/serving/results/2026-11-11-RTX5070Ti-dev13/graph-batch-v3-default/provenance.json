@@ -3,7 +3,7 @@
   "status": "valid",
   "engine": {
     "name": "paged-serving",
-    "commit": "3ab35ad9a6c635abcf4cb575add0b19f5f052ef0"
+    "commit": "a9f9fa3a6838516f900d9ee4939e8d420e6ef53d"
   },
   "backend": {
     "name": "tiny-llm",
@@ -42,5 +42,5 @@
     "observed_gpu_mem_mib": 4582
   },
   "environment": {},
-  "notes": "DEV-14 默认启用验证：无 env 的默认行为抽查（c8 单 run）。批量 graph 分桶 {2,4,8}。"
+  "notes": "DEV-14 默认启用验证：无 env 的默认行为抽查（c8 单 run）。批量 graph 分桶 {2,4,8}。run 时 paged-serving dirty 为结果文件自指（v3 臂覆写未提交），源码干净。"
 }

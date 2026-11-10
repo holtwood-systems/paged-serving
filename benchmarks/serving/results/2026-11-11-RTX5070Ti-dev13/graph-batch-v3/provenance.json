@@ -3,7 +3,7 @@
   "status": "valid",
   "engine": {
     "name": "paged-serving",
-    "commit": "3ab35ad9a6c635abcf4cb575add0b19f5f052ef0"
+    "commit": "a9f9fa3a6838516f900d9ee4939e8d420e6ef53d"
   },
   "backend": {
     "name": "tiny-llm",
@@ -44,5 +44,5 @@
   "environment": {
     "TLLM_BATCH_DECODE": "1"
   },
-  "notes": "DEV-14 批量 graph 分桶 {2,4,8}（env=1 显式，与默认等价）。运行时 tiny-llm dirty（本 provenance 记录其提交 136c0d0）。"
+  "notes": "DEV-14 批量 graph 分桶 {2,4,8}（env=1 显式，与默认等价）。干净重跑：paged-serving/tiny-llm 均为已提交 HEAD，无 dirty。"
 }

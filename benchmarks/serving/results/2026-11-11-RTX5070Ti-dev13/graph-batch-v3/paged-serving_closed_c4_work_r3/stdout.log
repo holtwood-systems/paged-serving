@@ -4,10 +4,10 @@ warmup 完成（30s），开始测量窗口
 权威汇总已写入: results/2026-11-11-RTX5070Ti-dev13/graph-batch-v3/paged-serving_closed_c4_work_r3/summary.json
 === loadgen 汇总 ===
 引擎: paged-serving | 模式: closed | 目标: http://127.0.0.1:3111
-请求: 64（成功 64，成功率 100.00%）| 测量窗口: 19.895s
-TTFT ms p50/p95/p99: 377.80 / 410.45 / 410.49（n=64）
-chunk 间隔 ms p50/p95/p99: 6.65 / 7.10 / 7.43（n=8128）（不是 ITL）
+请求: 64（成功 64，成功率 100.00%）| 测量窗口: 19.971s
+TTFT ms p50/p95/p99: 381.47 / 401.31 / 401.32（n=64）
+chunk 间隔 ms p50/p95/p99: 6.70 / 7.15 / 7.46（n=8128）（不是 ITL）
 ITL ms: -（协议未提供 token 级时间戳）
-TPOT ms p50/p95/p99: 6.80 / 6.97 / 6.97（n=64）
+TPOT ms p50/p95/p99: 6.85 / 7.03 / 7.03（n=64）
 token 计数覆盖: 64/64（100.00%）
-吞吐: 411.8 tok/s | 3.22 req/s
+吞吐: 410.2 tok/s | 3.20 req/s
