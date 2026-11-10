@@ -1,0 +1,20 @@
+arm,concurrency,reps,median_tok_s,median_tpot_p50_ms,median_ttft_p95_ms
+eager scalar,1,3,189.9,4.43,106.7
+eager scalar,2,3,202.5,8.43,204.6
+eager scalar,4,3,206.1,16.55,413.2
+eager scalar,8,3,207.7,32.57,837.0
+eager batch,1,3,194.5,4.41,108.1
+eager batch,2,3,261.0,6.19,205.4
+eager batch,4,3,341.9,8.79,405.4
+eager batch,8,3,388.2,14.78,773.7
+graph scalar (default),1,3,284.3,2.77,108.0
+graph scalar (default),2,3,296.4,5.28,206.4
+graph scalar (default),4,3,306.4,10.16,402.6
+graph scalar (default),8,3,310.6,19.97,777.8
+"graph+batch B∈{2,4,8}",1,3,284.6,2.76,107.9
+"graph+batch B∈{2,4,8}",2,3,262.2,5.97,206.3
+"graph+batch B∈{2,4,8}",4,3,341.3,8.8,403.8
+"graph+batch B∈{2,4,8}",8,3,384.1,15.07,776.2
+"graph+batch B∈{4,8} (v2)",2,3,296.4,5.28,203.5
+"graph+batch B∈{4,8} (v2)",4,3,338.9,8.87,401.3
+"graph+batch B∈{4,8} (v2)",8,3,387.6,14.73,780.5

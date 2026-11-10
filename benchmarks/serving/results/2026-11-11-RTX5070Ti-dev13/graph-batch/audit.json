@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "root": "results/2026-11-11-RTX5070Ti-dev13/graph-batch",
+  "formal": false,
+  "errors": [],
+  "warnings": [
+    {
+      "code": "dirty_provenance",
+      "location": "results/2026-11-11-RTX5070Ti-dev13/graph-batch",
+      "message": "实验声明 dirty，commit 不能单独重建当时源码"
+    }
+  ],
+  "groups": [
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c1",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 107.93186733333334,
+          "min": 107.637434,
+          "max": 108.287464,
+          "relative_range_pct": 0.6022595699122568
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 285.16782183478534,
+          "min": 282.96512127159605,
+          "max": 287.979227068423,
+          "relative_range_pct": 1.758299994917342
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.2278736080842605,
+          "min": 2.210665009934344,
+          "max": 2.2498377114720545,
+          "relative_range_pct": 1.758299994917342
+        }
+      },
+      "provenance": {
+        "engine_commit": "3ab35ad9a6c635abcf4cb575add0b19f5f052ef0",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "W8A16",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c2",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 208.13327033333334,
+          "min": 206.083712,
+          "max": 212.050051,
+          "relative_range_pct": 2.8665955185563012
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 263.92728033875494,
+          "min": 257.9629380700596,
+          "max": 271.5836442454161,
+          "relative_range_pct": 5.160779953430405
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.061931877646523,
+          "min": 2.0153354536723405,
+          "max": 2.1217472206673134,
+          "relative_range_pct": 5.160779953430405
+        }
+      },
+      "provenance": {
+        "engine_commit": "3ab35ad9a6c635abcf4cb575add0b19f5f052ef0",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "W8A16",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c4",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "non_converged",
+          "samples": 3,
+          "mean": 414.74211933333333,
+          "min": 398.417539,
+          "max": 442.049278,
+          "relative_range_pct": 10.520209297800466
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 340.4767928569316,
+          "min": 337.48741322524415,
+          "max": 342.64673923109143,
+          "relative_range_pct": 1.5153238382432797
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.659974944194778,
+          "min": 2.63662041582222,
+          "max": 2.676927650242902,
+          "relative_range_pct": 1.5153238382432797
+        }
+      },
+      "provenance": {
+        "engine_commit": "3ab35ad9a6c635abcf4cb575add0b19f5f052ef0",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "W8A16",
+        "arrival_schedule": null
+      }
+    },
+    {
+      "key": [
+        "paged-serving",
+        "closed",
+        "c8",
+        "work"
+      ],
+      "repeats": [
+        1,
+        2,
+        3
+      ],
+      "metrics": {
+        "ttft_p95_ms": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 787.4659116666667,
+          "min": 771.419206,
+          "max": 814.736809,
+          "relative_range_pct": 5.5008861156057565
+        },
+        "output_tokens_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 382.38779027378337,
+          "min": 374.60333528566116,
+          "max": 388.46202572064544,
+          "relative_range_pct": 3.624250247389355
+        },
+        "successful_requests_per_second": {
+          "status": "converged",
+          "samples": 3,
+          "mean": 2.9874046115139326,
+          "min": 2.926588556919228,
+          "max": 3.0348595759425425,
+          "relative_range_pct": 3.624250247389355
+        }
+      },
+      "provenance": {
+        "engine_commit": "3ab35ad9a6c635abcf4cb575add0b19f5f052ef0",
+        "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+        "backend_quant": "W8A16",
+        "arrival_schedule": null
+      }
+    }
+  ],
+  "convergence_rule": {
+    "statistic": "(max-min)/mean",
+    "threshold_pct": 10,
+    "minimum_repeats": 3
+  },
+  "runs": {
+    "discovered": 12,
+    "validated": 12
+  },
+  "status": "passed"
+}

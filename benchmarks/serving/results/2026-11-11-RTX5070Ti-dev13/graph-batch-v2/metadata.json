@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-11",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 5070 Ti",
+    "vram": "16303 MiB",
+    "driver": "616.56"
+  },
+  "software": {
+    "cuda_toolkit": "Build cuda_13.3.r13.3/compiler.38244171_0"
+  },
+  "commits": {
+    "paged_serving": "3ab35ad9a6c635abcf4cb575add0b19f5f052ef0",
+    "tiny_llm": "4016c6cf0abef081588e56cc31e7caefd50d74b9",
+    "dirty": true,
+    "paged_serving_dirty": true,
+    "tiny_llm_dirty": true
+  },
+  "build": {
+    "profile": "release",
+    "cuda_archs": "120"
+  }
+}
