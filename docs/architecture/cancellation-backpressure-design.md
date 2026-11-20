@@ -1,7 +1,7 @@
 # PSRV-CANCEL-BP 设计包：请求取消与有界背压
 
 > 对应任务：PSRV-P0-001（主动取消）、PSRV-P0-002（有界背压）、PSRV-P0-003
-> （指标语义冻结）。评审包来源：`ai-infra-interview-prep/L3_L4_DESIGN_REVIEW_PACKAGES.md` §7。
+> （指标语义冻结）。评审包来源：私有评审材料 `L3_L4_DESIGN_REVIEW_PACKAGES.md` §7。
 > 本文是设计冻结稿，未经 reviewer 批准前不得修改生产实现。
 
 > 实现对齐：2026-10-04 整改分支复用主动取消实现；有界 mailbox、带外终态、

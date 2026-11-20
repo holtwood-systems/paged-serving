@@ -5,7 +5,7 @@ Status: implemented
 ## Problem
 
 `2026-11-05-RTX4090-exclusive-gpu/report.md` 与本仓 ROADMAP 存在三处
-与原始证据不一致的口径，私有声明表（career-prep `evidence/claims.md`
+与原始证据不一致的口径，私有声明表（私有执行仓 `evidence/claims.md`
 「公开材料待校对」）已登记待修：
 
 1. report.md 写被测代码为 `d7e2518`，但包内 `metadata.json` 与各 run
