@@ -16,7 +16,7 @@ DEV-02 要求 closed/Poisson 矩阵外补「有重复前缀、长短混合」的
 之后，md5 校验确认）。数据集文件本身随本提交入库，保证 provenance
 可复现。
 
-## Alternatives
+## Alternatives considered
 
 - 运行期脚本现场拼接：不可复现、provenance 缺一环。
 - 修改 work.jsonl 注入前缀：污染既有基线数据集的跨次可比性。
